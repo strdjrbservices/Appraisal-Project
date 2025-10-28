@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}Compare PDF vs. HTML{% endblock %}
+
+{% block content %}
+<style>
+    #upload-form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 3rem;
+        border-radius: 15px;
+        max-width: 650px;
+        margin: 50px auto;
+        background-color: #ffffff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        text-align: center;
+    }
+
+    #upload-form h2 {
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        color: #333;
+        font-weight: 600;
+    }
+
+    .file-upload-container {
+        display: flex;
+        gap: 1.5rem;
+        width: 100%;
+        margin-bottom: 1.5rem;
+    }
+
+    .file-drop-zone {
+        border: 2px dashed #d1d5db;
+        border-radius: 12px;
+        padding: 2rem;
+        width: 50%;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.3s, background-color 0.3s;
+    }
+
+    .file-drop-zone:hover, .file-drop-zone.dragover {
+        background-color: #f9fafb;
+        border-color: #3b82f6;
+    }
+
+    .file-drop-zone .drop-zone-text {
+        color: #6b7280;
+        font-weight: 500;
+    }
+
+    .file-drop-zone .browse-link {
+        color: #3b82f6;
+        font-weight: 600;
+    }
+
+    input[type="file"] {
+        display: none;
+    }
+
+    .button-container {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .btn {
+        border: none;
+        padding: 10px 25px;
+        cursor: pointer;
+        color: white;
+        border-radius: 8px;
+        font-size: 1em; /* Ensure consistent font size */
+        text-decoration: none; /* For <a> tags styled as buttons */
+        display: inline-flex; /* For vertical alignment */
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        transition: background-color 0.2s ease-in-out;
+        background-color: #007bff;
+    }
+
+    .btn:hover {
+        background-color: #0056b3;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background-color: #5a6268;
+    }
+
+    .file-name {
+        color: #1f2937;
+        font-weight: 500;
+        margin-top: 1rem;
+        display: block;
+        font-size: 0.9em;
+        word-break: break-all;
+    }
+</style>
+
+<form id="upload-form" method="post" enctype="multipart/form-data">
+    <h2>Compare PDF Data with HTML Report</h2>
+    <p style="margin-top:-1rem; margin-bottom: 2rem; color: #6b7280;">Upload an appraisal PDF and its corresponding HTML export to verify data consistency.</p>
+    {% csrf_token %}
+
+    <div class="file-upload-container">
+        <div id="file-drop-zone1" class="file-drop-zone">
+            <p class="drop-zone-text"><strong>Appraisal PDF:</strong> Drag & Drop or <span class="browse-link">browse</span></p>
+            <span id="file-name1" class="file-name"></span>
+        </div>
+        <div id="file-drop-zone2" class="file-drop-zone">
+            <p class="drop-zone-text"><strong>HTML Report:</strong> Drag & Drop or <span class="browse-link">browse</span></p>
+            <span id="file-name2" class="file-name"></span>
+        </div>
+    </div>
+
+    <input id="pdf_file" type="file" name="pdf_file" accept="application/pdf" required>
+    <input id="html_file" type="file" name="html_file" accept=".html,.htm" required>
+
+    <div class="button-container">
+        <!-- <a href="{% url 'upload_pdf' %}" class="btn btn-secondary">&larr; Back</a> -->
+        <button type="submit" class="btn">Verify Data</button>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Re-using the same JS from the other compare page for drag-and-drop functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        function setupDragAndDrop(dropZoneId, fileInputId, fileNameId) {
+            const dropZone = document.getElementById(dropZoneId);
+            const fileInput = document.getElementById(fileInputId);
+            const fileNameDisplay = document.getElementById(fileNameId);
+            if (!dropZone || !fileInput || !fileNameDisplay) { return; }
+            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+            ['dragleave', 'dragend'].forEach(type => { dropZone.addEventListener(type, () => dropZone.classList.remove('dragover')); });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    fileNameDisplay.textContent = fileInput.files[0].name;
+                }
+            });
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length) { fileNameDisplay.textContent = fileInput.files[0].name; }
+            });
+        }
+        setupDragAndDrop('file-drop-zone1', 'pdf_file', 'file-name1');
+        setupDragAndDrop('file-drop-zone2', 'html_file', 'file-name2');
+    });
+</script>
+{% endblock %}

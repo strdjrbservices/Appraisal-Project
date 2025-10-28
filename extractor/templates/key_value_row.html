@@ -1,0 +1,25 @@
+{% load dict_helpers %}
+
+<tr>
+    <td>{{ key }}</td>
+    <td>
+        {% if value.items %}
+            {# It's a dictionary, render as a key-value list #}
+            <ul class="structured-value">
+                {% for sub_key, sub_value in value.items %}
+                    <li><span>{{ sub_key }}:</span> <span>{{ sub_value|default_if_none:"" }}</span></li>
+                {% endfor %}
+            </ul>
+        {% elif value|is_list %}
+            {# It's a list, render as a simple list #}
+            <ul class="structured-value">
+                {% for item in value %}
+                    <li>{{ item|default_if_none:"" }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            {# It's a simple value, make it editable #}
+            <div contenteditable="true" class="editable-value">{{ value|default_if_none:"" }}</div>
+        {% endif %}
+    </td>
+</tr>

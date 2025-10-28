@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Appraisal PDF{% endblock %} 
+
+{% block content %}
+<style>
+    #upload-form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 3rem;
+        border: none; /* Remove border from main form container */
+        border-radius: 15px;
+        max-width: 550px; /* Increase width slightly */
+        margin: 50px auto;
+        background-color: #ffffff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        text-align: center;
+        transition: box-shadow 0.3s ease;
+    }
+
+    #upload-form h2 {
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        color: #333;
+        font-weight: 600;
+    }
+
+    /* New styles for the file input area */
+    #file-drop-zone {
+        border: 2px dashed #d1d5db;
+        border-radius: 12px;
+        padding: 2.5rem;
+        width: 100%;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.3s, background-color 0.3s;
+        margin-bottom: 1.5rem;
+    }
+
+    #file-drop-zone:hover, #file-drop-zone.dragover {
+        background-color: #f9fafb;
+        border-color: #3b82f6;
+    }
+
+    #file-drop-zone .drop-zone-text {
+        color: #6b7280;
+        font-weight: 500;
+    }
+
+    #file-drop-zone .browse-link {
+        color: #3b82f6;
+        font-weight: 600;
+    }
+
+    /* Hide the default file input */
+    input[type="file"] {
+        display: none;
+    }
+
+    /* Common button styles */
+    .btn {
+        border: none;
+        display: inline-block;
+        padding: 10px 25px;
+        cursor: pointer;
+        color: white;
+        border-radius: 8px;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+    }
+
+    .btn:active {
+        transform: translateY(1px);
+    }
+
+
+    /* Style for the submit button */
+    #upload-form button[type="submit"] {
+        background-color: #007bff;
+    }
+
+    #upload-form button[type="submit"]:hover {
+        background-color: #0056b3;
+    }
+
+    #file-name {
+        color: #1f2937;
+        font-weight: 500;
+        margin-top: 1rem;
+        display: block; /* Make it a block to sit below the text */
+    }
+</style>
+    <form id="upload-form" method="post" enctype="multipart/form-data">
+        <h2>Upload Appraisal PDF</h2>
+        {% csrf_token %}
+        
+        <div id="file-drop-zone">
+            <p class="drop-zone-text">
+                Drag & Drop your PDF here or 
+                <span class="browse-link">browse files</span>
+            </p>
+            <span id="file-name"></span>
+        </div>
+
+        <input id="pdf_file" type="file" name="pdf_file" accept="application/pdf" required>
+        <button type="submit" class="btn">Upload and Extract</button>
+
+        <div style="margin-top: 2rem; font-size: 0.9em;">
+            <p style="color: #6b7280; margin-bottom: 0.5rem;">Or, use a comparison tool:</p>
+            <a href="{% url 'compare_pdfs' %}" style="color: #007bff; margin-right: 1rem;" target="_blank" rel="noopener noreferrer">Compare two PDFs</a>
+            <span style="color: #ccc;">|</span>
+            <a href="{% url 'compare_html_pdf' %}" style="color: #007bff; margin-left: 1rem;" target="_blank" rel="noopener noreferrer">Verify PDF vs. HTML</a>
+        </div>
+    </form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropZone = document.getElementById('file-drop-zone');
+        const fileInput = document.getElementById('pdf_file');
+        const fileNameDisplay = document.getElementById('file-name');
+
+        // Open file dialog when drop zone is clicked
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // Add dragover class for visual feedback
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        // Remove dragover class
+        ['dragleave', 'dragend'].forEach(type => {
+            dropZone.addEventListener(type, () => dropZone.classList.remove('dragover'));
+        });
+
+        // Handle dropped file
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                fileNameDisplay.textContent = fileInput.files[0].name;
+            }
+        });
+
+        // Update file name when selected via browse
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) {
+                fileNameDisplay.textContent = fileInput.files[0].name;
+            }
+        });
+    });
+</script>
+{% endblock %}

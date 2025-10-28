@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+
+{% block title %}PDF Comparison Results{% endblock %}
+
+{% block content %}
+<style>
+    .results-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .results-container h2 {
+        margin-top: 0;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .summary-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .summary-card {
+        background-color: #f9fafb;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+    }
+    .summary-card h3 {
+        margin-top: 0;
+        font-size: 1.1rem;
+        color: #374151;
+    }
+    .summary-card .filename {
+        font-size: 0.9em;
+        color: #6b7280;
+        word-break: break-all;
+    }
+    .summary-card .page-count {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #111827;
+        margin-top: 0.5rem;
+    }
+    .value-comparison-card {
+        grid-column: 1 / -1; /* Span both columns */
+        background-color: #f3f4f6;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        margin-top: -1rem; /* Pull it up slightly */
+        margin-top: 0.5rem;
+    }
+    .differences-section {
+        margin-top: 2rem;
+    }
+    .differences-section h3 {
+        color: #1f2937;
+    }
+    .alert {
+        padding: 1rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+    .alert-success {
+        background-color: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+    }
+    .alert-warning {
+        background-color: #fffbeb;
+        border: 1px solid #fde68a;
+        color: #854d0e;
+    }
+    .page-list {
+        list-style-type: none;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .page-list li {
+        background-color: #fee2e2;
+        color: #991b1b;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.9em;
+        font-weight: 500;
+    }
+    .diff-details {
+        margin-top: 1.5rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .diff-header {
+        background-color: #f9fafb;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .diff-header:hover {
+        background-color: #f3f4f6;
+    }
+    .diff-content {
+        display: none; /* Hidden by default */
+        padding: 1rem;
+        background-color: #fff;
+        border-top: 1px solid #e5e7eb;
+        overflow-x: auto;
+    }
+    /* Styles for the difflib table */
+    table.diff {
+        border-collapse: collapse;
+        width: 100%;
+        font-family: monospace;
+        font-size: 0.9em;
+    }
+    .diff th {
+        background-color: #f1f1f1;
+    }
+    .diff_add { background-color: #e6ffed; }
+    .diff_chg { background-color: #fff3cd; }
+    .diff_sub { background-color: #ffeef0; }
+    .arrow::after {
+        content: ' ▼';
+        transition: transform 0.2s;
+    }
+    .arrow.open::after {
+        transform: rotate(-180deg);
+    }
+</style>
+
+<div class="results-container">
+    <h2>Comparison Summary</h2>
+
+    {% if results.error %}
+        <div class="alert alert-danger">{{ results.error }}</div>
+    {% else %}
+
+    <div class="summary-grid">
+        <div class="summary-card">
+            <h3>PDF 1 (Revised Report)</h3>
+            <p class="filename">{{ filename1 }}</p>
+            <p class="page-count">{{ results.page_count_1 }} Pages</p>
+        </div>
+        <div class="summary-card">
+            <h3>PDF 2 (Old Report)</h3>
+            <p class="filename">{{ filename2 }}</p>
+            <p class="page-count">{{ results.page_count_2 }} Pages</p>
+        </div>
+
+        {% if results.market_value_1 or results.market_value_2 %}
+        <div class="value-comparison-card">
+            <h3 style="margin-bottom: 1rem;">Opinion of Market Value Comparison</h3>
+            {% if results.market_value_1 != results.market_value_2 %}
+                <div class="alert alert-warning">
+                    <strong>Value Changed:</strong> The Opinion of Market Value in the revised report is different from the old report.
+                </div>
+                <p style="margin-top: 1rem;">
+                    <strong>Old Report Value:</strong> <span style="text-decoration: line-through;">{{ results.market_value_2|default:"Not Found" }}</span><br>
+                    <strong>Revised Report Value:</strong> <strong style="color: #166534;">{{ results.market_value_1|default:"Not Found" }}</strong>
+                </p>
+            {% else %}
+                <div class="alert alert-success">
+                    <strong>No Change:</strong> The Opinion of Market Value is consistent across both reports.
+                </div>
+                <p style="margin-top: 1rem;">
+                    <strong>Value:</strong> <strong>{{ results.market_value_1|default:"Not Found" }}</strong>
+                </p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="differences-section">
+        <h3>Findings</h3>
+        {% if not results.differing_pages and not results.extra_pages_1 and not results.extra_pages_2 %}
+            <div class="alert alert-success">
+                No content differences were found between the two documents.
+            </div>
+        {% else %}
+            {% if results.page_count_1 != results.page_count_2 %}
+                <div class="alert alert-warning">
+                    Page counts are different.
+                </div>
+            {% endif %}
+
+            {% if results.extra_pages_1 %}
+            <div class="alert alert-warning" style="margin-top: 1rem;">
+                <p>PDF 1 has extra pages not found in PDF 2:</p>
+                <ul class="page-list">
+                    {% for page_num in results.extra_pages_1 %}
+                        <li>Page {{ page_num }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if results.extra_pages_2 %}
+            <div class="alert alert-warning" style="margin-top: 1rem;">
+                <p>PDF 2 has extra pages not found in PDF 1:</p>
+                <ul class="page-list">
+                    {% for page_num in results.extra_pages_2 %}
+                        <li>Page {{ page_num }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if results.differing_pages %}
+            <div class="alert alert-warning">
+                <p>Text content differences were found on matching pages. Click to expand.</p>
+            </div>
+            {% for diff_item in results.differing_pages %}
+            <div class="diff-details">
+                <div class="diff-header">
+                    <span>Page {{ diff_item.page_number }}</span>
+                    <span class="arrow"></span>
+                </div>
+                <div class="diff-content">
+                    {{ diff_item.diff_html|safe }}
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+        {% endif %}
+    </div>
+
+    {% endif %}
+
+    <div style="text-align: center; margin-top: 3rem;">
+        <a href="{% url 'compare_pdfs' %}" style="color: #007bff; text-decoration: none;">Compare other files</a>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.diff-header').forEach(header => {
+    header.addEventListener('click', () => {
+        const content = header.nextElementSibling;
+        const arrow = header.querySelector('.arrow');
+        content.style.display = content.style.display === 'block' ? 'none' : 'block';
+        arrow.classList.toggle('open');
+    });
+});
+</script>
+{% endblock %}

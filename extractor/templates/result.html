@@ -1,0 +1,2320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extraction Result: {{ section_title }}</title>
+    <style>
+        :root {
+            --primary-bg: #f8fafc;
+            --sidebar-bg: #ffffff;
+            --border-color: #e5e7eb;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --error-color: #dc2626;
+        }
+        /* ... existing styles ... */
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            display: flex;
+            margin: 0;
+            background-color: var(--primary-bg);
+            color: var(--text-primary);
+        }
+        .sidebar {
+            width: 280px;
+            background-color: var(--sidebar-bg);
+            padding: 24px;
+            height: 100vh;
+            border-right: 1px solid var(--border-color);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-footer {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .back-btn {
+            display: block;
+            flex-grow: 1;
+            padding: 12px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            text-align: center;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .sidebar h3 {
+            margin-top: 0;
+            font-size: 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+        .sidebar ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        .sidebar li a {
+            display: block;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            border-radius: 6px;
+            font-weight: 500;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .sidebar li a:hover {
+            background-color: #f3f4f6;
+            color: var(--text-primary);
+        }
+        .sidebar li a.active {
+            background-color: var(--accent-color);
+            color: white;
+            font-weight: 600;
+        }
+        .new-upload-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;            
+            margin-top: 20px;
+            background-color: #e5e7eb;
+            color: #374151;
+            border: none;
+            border-radius: 6px;
+            text-align: center;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .sidebar-footer .new-upload-btn {
+            margin-top: 0;
+            flex-grow: 1;
+        }
+        .new-upload-btn:hover {
+            background-color: #d1d5db;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 40px;
+            position: relative;
+        }
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px; /* Space between header and validation messages */
+        }
+        .header-main {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+        }
+        h1 { margin: 0; font-size: 2rem; }
+        .loading-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--accent-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px;
+            text-align: left;
+        }
+        th {
+            background-color: #f9fafb;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        tbody tr:last-child th,
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .error {
+            color: var(--error-color);
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            padding: 16px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .validation-message {
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .validation-success {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+        .validation-error {
+            background-color: #fffbeb;
+            border: 1px solid #fde68a;
+            color: #854d0e;
+        }
+        .validation-warning {
+            background-color: #fff3cd; /* Light yellow */
+            border: 1px solid #ffeeba; /* Yellow border */
+            color: #664d03; /* Dark yellow text */
+        }
+        .structured-value {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        .structured-value li {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+        }
+        .editable-value {
+            background-color: #fefce8; /* Light yellow background */
+            cursor: text;
+            padding: 14px 16px; /* Adjust padding to match other cells */
+            margin: -16px; /* Counteract parent padding */
+            min-height: 1.5em; /* Ensure it has some height even when empty */
+        }
+        .editable-value:focus {
+            outline: 2px solid var(--accent-color);
+        }
+        .editable-value.changed-value {
+            background-color: #fff3cd; /* Light yellow for changed values */
+            border: 1px solid #ffeeba; /* Yellow border */
+        }
+        .validate-button {
+            padding: 10px 20px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+        .validate-button:hover {
+            background-color: var(--accent-hover);
+        }
+        /* Styles for Consistency Check section */
+        .consistency-check {
+            border-left-width: 4px;
+        }
+        .consistency-success {
+            border-left-color: #22c55e; /* green-500 */
+        }
+        .consistency-mismatch {
+            border-left-color: #f59e0b; /* amber-500 */
+        }
+        .consistency-check .check-title {
+            font-weight: 600;
+        }
+        .consistency-check .check-details {
+            color: var(--text-secondary);
+            padding-top: 8px;
+        }
+        /* Styles for Custom Analysis */
+        .custom-analysis-container {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .custom-analysis-container h3 {
+            margin-top: 0;
+        }
+        .custom-analysis-summary {
+            background-color: #f3f4f6;
+            padding: 16px;
+            border-radius: 6px;
+            margin-top: 16px;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+        .findings-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 24px;
+        }
+        .findings-table th, .findings-table td {
+            border: 1px solid var(--border-color);
+            padding: 12px 16px;
+            text-align: left;
+        }
+        .findings-table th {
+            background-color: #f9fafb;
+        }
+        .finding-title {
+            font-weight: 600;
+        }
+        .finding-source {
+            font-style: italic;
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+        .query-display {
+            background: #eef2ff;
+            border-left: 4px solid #4338ca;
+            padding: 16px;
+            border-radius: 4px;
+        }
+        /* New styles for Custom Analysis two-column layout */
+        .custom-analysis-page-container {
+            display: flex;
+            gap: 40px;
+            height: calc(100vh - 120px); /* Adjust based on header height */
+        }
+        .analysis-form-column {
+            flex: 0 0 40%; /* Form takes 40% of the width */
+            display: flex;
+            flex-direction: column;
+        }
+        .analysis-results-column {
+            flex: 1; /* Results take the remaining space */
+            overflow-y: auto; /* Allow results to scroll independently */
+            padding-right: 20px; /* Add some padding for the scrollbar */
+        }
+        .analysis-card {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .analysis-card h3 {
+            margin-top: 0;
+            color: #343a40;
+        }
+        .analysis-card textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+            font-family: inherit;
+            font-size: 1rem;
+            margin-top: 1rem;
+            min-height: 150px;
+            resize: vertical;
+        }
+        .analysis-card textarea:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+            outline: none;
+        }
+        .btn-submit {
+            background-color: #28a745;
+            color: white;
+            margin-top: 1rem;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .btn-submit:hover {
+            background-color: #218838;
+        }
+        .suggested-prompts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .prompt-suggestion-btn {
+            background-color: #e9ecef;
+            border: 1px solid #dee2e6;
+            color: #495057;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+        }
+        .prompt-suggestion-btn:hover {
+            background-color: #d0e3ff;
+            color: #004085;
+            border-color: #b8daff;
+        }
+        .placeholder-text {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            text-align: center;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+        }
+        .common-prompt-details {
+            font-size: 0.85em;
+            color: #6c757d;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 5px;
+            display: none; /* Hidden by default */
+        }
+        .common-prompt-details ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+        .common-prompt-btn-container {
+            position: relative;
+        }
+        .common-prompt-btn-container:hover .common-prompt-details {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    {% load dict_helpers %}
+    <div class="sidebar">
+
+        <h3>Sections</h3>
+        <ul>
+            {% for key, display_name in sections.items %}
+                <li>
+                    <a href="{% url 'extract_section' filename=filename section_name=key %}" class="section-link {% if key == section_key %}active{% endif %}">
+                        {{ display_name }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+        <div class="sidebar-footer">
+            <a href="javascript:history.back()" class="back-btn">← Back</a>
+            <a href="{% url 'upload_pdf' %}" class="new-upload-btn">New Upload</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="loading-overlay" id="loading-overlay">
+            <div class="spinner"></div>
+        </div>
+
+        <div class="header-container">
+            <div class="header-main">
+                <h1>{{ section_title }}</h1>
+                <p><strong>Review Time:</strong> <span id="review-timer">00:00:00</span></p>
+            </div>
+            <button id="validate-btn" class="validate-button">Validate</button>
+        </div>
+        <div id="validation-container"></div>
+
+        {% if data.error %}
+            <p class="error">Error: {{ data.error }}</p>
+        {% elif section_key == 'sales_grid' %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Subject</th>
+                        {% for comp in data.comparables %}
+                            <th>Comparable #{{ forloop.counter }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for field, subject_value in data.subject.items %}
+                    <tr>
+                        <td>{{ field }}</td>
+                        <td contenteditable="true" class="editable-value" data-field-name="{{ field }} - Subject">{{ subject_value|default_if_none:"" }}</td>
+                        {% for comp in data.comparables %}
+                            <td contenteditable="true" class="editable-value" data-field-name="{{ field }} - Comparable #{{ forloop.counter }}">
+                                {# Use the get_item filter to access the value by the field name #} 
+                                {{ comp|get_item:field|default_if_none:"" }}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                    {# Display the final indicated value at the bottom, spanning all columns #}
+                    <tr>
+                        <td><strong>Indicated Value by Sales Comparison Approach</strong></td>
+                        <td colspan="{{ data.comparables|length|add:1 }}" contenteditable="true" class="editable-value" data-field-name="Indicated Value by Sales Comparison Approach">
+                            <strong>{{ data|get_item:"Indicated Value by Sales Comparison Approach"|default_if_none:"" }}</strong>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        {% elif section_key == 'sales_grid_adjustment' %}
+            <h3>Adjustment Grid Data</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Subject</th>
+                        {% for comp in data.comparables %}
+                            <th>Comparable #{{ forloop.counter }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for field, subject_value in data.subject.items %}
+                    <tr>
+                        <td>{{ field }}</td>
+                        <td contenteditable="true" class="editable-value" data-field-name="{{ field }} - Subject">{{ subject_value|default_if_none:"" }}</td>
+                        {% for comp in data.comparables %}
+                            <td contenteditable="true" class="editable-value" data-field-name="{{ field }} - Comparable #{{ forloop.counter }}">
+                                {{ comp|get_item:field|default_if_none:"" }}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="custom-analysis-container" style="margin-top: 40px;">
+                <h3>Adjustment Consistency Analysis</h3>
+                <p class="custom-analysis-summary">{{ data.adjustment_analysis.summary }}</p>
+                <p><strong>Details:</strong></p>
+                <ul>{% for detail in data.adjustment_analysis.details %}<li>{{ detail }}</li>{% endfor %}</ul>
+            </div>
+        {% elif section_key == 'custom_analysis' %}
+            <div class="custom-analysis-page-container">
+                <div class="analysis-form-column">
+                    <div class="analysis-card">
+                        <h3>Custom Document Analysis</h3>
+                        <p>Enter a question below, or select a suggestion to get started.</p>
+                        <div class="suggested-prompts">
+                            <button type="button" class="prompt-suggestion-btn" data-prompt="Check for any discrepancies in the Gross Living Area (GLA) across all sections of the report.">GLA Consistency</button>
+                            <button type="button" class="prompt-suggestion-btn" data-prompt="Verify that the subject property address is consistent across the Subject section, Sales Grid, Location Map, and Aerial Map
+
+Also please confirm subject street, front and rear photo are present and no duplicates.">Verify Subject Address, Photo(Street, front, rear, Duplicates)</button>
+                            <button type="button" class="prompt-suggestion-btn" data-prompt="Compare the bedroom and bathroom counts between the Improvements section, Sales Grid, and all available floor plans/ sktech/ building sketch and all photos.">Compare Room Counts</button>
+                            <button type="button" class="prompt-suggestion-btn" data-prompt="Match all comparable property addresses between the Sales Grid, photo pages, and the Location Map.
+
+Also please confirm no duplicates.">Verify Comparable Address, Photo(Duplicates)</button>
+                            <button type="button" class="prompt-suggestion-btn" data-prompt="Verify all Photo labels and no duplicate photos">Verify Photo Lables</button>
+                            <div class="common-prompt-btn-container"> 
+                                <button type="button" class="prompt-suggestion-btn" data-prompt="Please check and verify if below revision requests are addressed in the file.&#10;&#10;The date lease begins of rental comp# 3 is noted as Owner, please revise&#10;&#10;If addressed by comments, please verify if particular section is updated.&#10;&#10;If addressed, provide answer as revision and state corrected or not corrected. Keep it short.&#10;&#10;Below are extra points to confirm, don't address or treat as revision, just verify&#10;&#10;Also, please check if any checkboxes, or field are blank, if yes highlight in short&#10;&#10;consider below,&#10;&#10;if assignment type is refinance, then contract section should be blank, even checkboxes.&#10;&#10;If purchase, the appropriate field and checkboxes should be marked.&#10;&#10;In garage, check and validate according to checkboxes marked. &#10;&#10;Check if appraised value is matched at in total 4 locations.&#10;&#10;The signature date should be greater than effective date. Effective date is as of date.&#10;&#10;In signature page Company Name/AMC Name should include Fastapp&#10;&#10;Check for prior services, exposure comment, check is appraiser invoice is attached if yes need to remove.&#10;&#10;Please answer 1 per line not in paragraph">
+                                    Common Prompt
+                                </button>
+                                <div class="common-prompt-details">
+                                    <p><strong>This prompt includes checks for:</strong></p>
+                                    <ul>
+                                        <li>Specific revision requests</li>
+                                        <li>Blank fields/checkboxes</li>
+                                        <li>Refinance/Purchase logic</li>
+                                        <li>Appraised value consistency</li>
+                                        <li>Date validation (Signature vs. Effective)</li>
+                                        <li>And more...</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form action="{% url 'extract_section' filename=filename section_name='custom_analysis' %}" method="post" id="custom-analysis-form">
+                            {% csrf_token %}
+                            <textarea name="custom_prompt" placeholder="e.g., 'Check for any discrepancies in the Gross Living Area (GLA) across all sections of the report.'">{{ custom_prompt|default_if_none:"" }}</textarea>
+                            <button type="submit" class="btn-submit">Run Custom Analysis</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="analysis-results-column">
+                    {% if data.analysis_summary %}
+                        <div class="custom-analysis-container">
+                            {% if custom_prompt %}
+                            <div class="query-display">
+                                <p><strong>Your Query:</strong></p>
+                                <p><em>{{ custom_prompt }}</em></p>
+                            </div>
+                            {% endif %}
+
+                            <div class="custom-analysis-summary">
+                                <p><strong>Analysis Summary:</strong></p>
+                                <p>{{ data.analysis_summary }}</p>
+                            </div>
+
+                            <h4 style="margin-top: 30px;">Findings:</h4>
+                            {% if data.findings %}
+                                <table class="findings-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Finding</th>
+                                            <th>Detail</th>
+                                            <th>Source Location</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for finding in data.findings %}
+                                        <tr>
+                                            <td class="finding-title">{{ finding.finding_title }}</td>
+                                            <td>{{ finding.finding_detail }}</td>
+                                            <td class="finding-source">{{ finding.source_location }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% else %}
+                                <p>No specific findings were extracted for this query.</p>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="placeholder-text">
+                            <p>Your analysis results will appear here.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% elif section_key == 'sale_history' %}
+            <h3>Prior Sale History Grid</h3>
+            {% if data.subject and data.comparables %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Subject</th>
+                            {% for comp in data.comparables %}
+                                <th>Comparable #{{ forloop.counter }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for field, subject_value in data.subject.items %}
+                        <tr>
+                            <td>{{ field }}</td>
+                            <td contenteditable="true" class="editable-value" data-field-name="{{ field }} - Subject">{{ subject_value|default_if_none:"" }}</td>
+                            {% for comp in data.comparables %}
+                                <td contenteditable="true" class="editable-value" data-field-name="{{ field }} - Comparable #{{ forloop.counter }}">
+                                    {{ comp|get_item:field|default_if_none:"" }}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+
+            <h3 style="margin-top: 40px;">Research and Analysis</h3>
+            <table>
+                <tbody>
+                    {% for key, value in data.items %}
+                        {% if key != 'subject' and key != 'comparables' %}
+                        <tr>
+                            <td>{{ key }}</td>
+                            <td contenteditable="true" class="editable-value" data-field-name="{{ key }}">{{ value|default_if_none:"" }}</td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% elif section_key == 'rental_grid' %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Subject</th>
+                        {% for comp in data.comparables %}
+                            <th>Comparable #{{ forloop.counter }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for field, subject_value in data.subject.items %}
+                    <tr>
+                        <td>{{ field }}</td>
+                        <td contenteditable="true" class="editable-value" data-field-name="{{ field }} - Subject">{{ subject_value|default_if_none:"" }}</td>
+                        {% for comp in data.comparables %}
+                            <td contenteditable="true" class="editable-value" data-field-name="{{ field }} - Comparable #{{ forloop.counter }}">
+                                {{ comp|get_item:field|default_if_none:"" }}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                    {# Display the summary fields at the bottom, spanning all columns #}
+                    <tr>
+                        <td><strong>Indicated Monthly Market Rent</strong></td>
+                        <td colspan="{{ data.comparables|length|add:1 }}" contenteditable="true" class="editable-value" data-field-name="Indicated Monthly Market Rent">
+                            <strong>{{ data|get_item:"Indicated Monthly Market Rent"|default_if_none:"" }}</strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Comments on market data...</strong></td>
+                        <td colspan="{{ data.comparables|length|add:1 }}" contenteditable="true" class="editable-value" data-field-name="Comments on market data...">
+                            {{ data|get_item:"Comments on market data..."|default_if_none:"" }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Final Reconciliation of Market Rent:</strong></td>
+                        <td colspan="{{ data.comparables|length|add:1 }}" contenteditable="true" class="editable-value" data-field-name="Final Reconciliation of Market Rent:">
+                            {{ data|get_item:"Final Reconciliation of Market Rent:"|default_if_none:"" }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        {% elif section_key == 'consistancy' %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Consistency Check</th>
+                        <th>Finding</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key, value in data.items %}
+                        {% with value_lower=value|lower %}
+                        <tr class="consistency-check {% if 'mismatch' in value_lower or 'discrepancies' in value_lower %}consistency-mismatch{% else %}consistency-success{% endif %}">
+                            <td class="check-title" data-field-name="{{ key }}">{{ key }}</td>
+                            <td class="check-details editable-value" contenteditable="true" data-field-name="{{ key }} - Finding">
+                                {{ value|default_if_none:"" }}
+                            </td>
+                        </tr>
+                        {% endwith %}
+                    {% endfor %}
+                </tbody>
+            </table>
+            <form action="{% url 'extract_section' filename=filename section_name='custom_analysis' %}" method="post" id="custom-analysis-form">
+            {% csrf_token %}
+            <textarea name="custom_prompt" placeholder="e.g., 'Check for any discrepancies in the Gross Living Area (GLA) across all sections of the report.'"></textarea></br>
+            <button type="submit" class="section-button btn-submit">Run Custom Analysis</button>
+            </form>
+        {% elif section_key == 'market_conditions' %}
+            <h3>Market Conditions Analysis Grid</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Inventory and Price Analysis</th>
+                        <th>Prior 7–12 Months</th>
+                        <th>Prior 4–6 Months</th>
+                        <th>Current – 3 Months</th>
+                        <th>Overall Trend</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key, value in data.items %}
+                        {% if value|is_dict %}
+                        <tr>
+                            <td>{{ key }}</td>
+                            <td contenteditable="true" class="editable-value" data-field-name="{{ key }} - Prior 7–12 Months">{{ value|get_item:"Prior 7–12 Months"|default_if_none:"" }}</td>
+                            <td contenteditable="true" class="editable-value" data-field-name="{{ key }} - Prior 4–6 Months">{{ value|get_item:"Prior 4–6 Months"|default_if_none:"" }}</td>
+                            <td contenteditable="true" class="editable-value" data-field-name="{{ key }} - Current – 3 Months">{{ value|get_item:"Current – 3 Months"|default_if_none:"" }}</td>
+                            <td contenteditable="true" class="editable-value" data-field-name="{{ key }} - Overall Trend">{{ value|get_item:"Overall Trend"|default_if_none:"" }}</td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h3 style="margin-top: 40px;">Additional Market Information</h3>
+            <table>
+                <tbody>
+                    {% for key, value in data.items %}
+                        {% if not value|is_dict %}
+                        <tr>
+                            <td>{{ key }}</td>
+                            <td contenteditable="true" class="editable-value" data-field-name="{{ key }}">{{ value|default_if_none:"" }}</td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% elif section_key == 'condo' %}
+            <h3>Subject Project Data Grid</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Project Data Analysis</th>
+                        <th>Prior 7–12 Months</th>
+                        <th>Prior 4–6 Months</th>
+                        <th>Current – 3 Months</th>
+                        <th>Overall Trend</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key, value in data.items %}
+                        {% if value|is_dict %}
+                        <tr>
+                            <td>{{ key }}</td>
+                            <td contenteditable="true" class="editable-value" data-field-name="{{ key }} - Prior 7–12 Months">{{ value|get_item:"Prior 7–12 Months"|default_if_none:"" }}</td>
+                            <td contenteditable="true" class="editable-value" data-field-name="{{ key }} - Prior 4–6 Months">{{ value|get_item:"Prior 4–6 Months"|default_if_none:"" }}</td>
+                            <td contenteditable="true" class="editable-value" data-field-name="{{ key }} - Current – 3 Months">{{ value|get_item:"Current – 3 Months"|default_if_none:"" }}</td>
+                            <td contenteditable="true" class="editable-value" data-field-name="{{ key }} - Overall Trend">{{ value|get_item:"Overall Trend"|default_if_none:"" }}</td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h3 style="margin-top: 40px;">Additional Condo Information</h3>
+            <table>
+                <tbody>
+                    {% for key, value in data.items %}
+                        {% if not value|is_dict %}
+                        <tr>
+                            <td>{{ key }}</td>
+                            <td contenteditable="true" class="editable-value" data-field-name="{{ key }}">{{ value|default_if_none:"" }}</td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% elif section_key == 'cost_approach' %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Support for the opinion of site value (summary of comparable land sales or other methods for estimating site value)</td><td contenteditable="true" class="editable-value" data-field-name="Support for the opinion of site value (summary of comparable land sales or other methods for estimating site value)">{{ data|get_item:"Support for the opinion of site value (summary of comparable land sales or other methods for estimating site value)"|default_if_none:"" }}</td></tr>
+                    <tr><td>Source of cost data</td><td contenteditable="true" class="editable-value" data-field-name="Source of cost data">{{ data|get_item:"Source of cost data"|default_if_none:"" }}</td></tr>
+                    <tr><td>Quality rating from cost service</td><td contenteditable="true" class="editable-value" data-field-name="Quality rating from cost service">{{ data|get_item:"Quality rating from cost service"|default_if_none:"" }}</td></tr>
+                    <tr><td>Effective date of cost data</td><td contenteditable="true" class="editable-value" data-field-name="Effective date of cost data">{{ data|get_item:"Effective date of cost data"|default_if_none:"" }}</td></tr>
+                    
+                    <tr style="background-color: #f9fafb;"><td colspan="2" style="padding: 8px;"></td></tr>
+                    
+                    <tr><td>Opinion of Site Value</td><td contenteditable="true" class="editable-value" data-field-name="Opinion of Site Value">{{ data|get_item:"Opinion of Site Value"|default_if_none:"" }}</td></tr>
+                    
+                    <tr style="background-color: #f9fafb;"><td colspan="2" style="font-weight: 600; color: var(--text-secondary); padding-left: 16px;">ESTIMATED REPRODUCTION OR REPLACEMENT COST NEW</td></tr>
+                    
+                    <tr><td>Dwelling</td><td contenteditable="true" class="editable-value" data-field-name="Dwelling">{{ data|get_item:"Dwelling"|default_if_none:"" }}</td></tr>
+                    <tr><td>Garage/Carport</td><td contenteditable="true" class="editable-value" data-field-name="Garage/Carport">{{ data|get_item:"Garage/Carport"|default_if_none:"" }}</td></tr>
+                    <tr><td><strong>Total Estimate of Cost-New</strong></td><td contenteditable="true" class="editable-value" data-field-name="Total Estimate of Cost-New"><strong>{{ data|get_item:"Total Estimate of Cost-New"|default_if_none:"" }}</strong></td></tr>
+                    
+                    <tr style="background-color: #f9fafb;"><td colspan="2" style="padding: 8px;"></td></tr>
+
+                    <tr><td>Depreciation</td><td contenteditable="true" class="editable-value" data-field-name="Depreciation">{{ data|get_item:"Depreciation"|default_if_none:"" }}</td></tr>
+                    <tr><td><strong>Depreciated Cost of Improvements</strong></td><td contenteditable="true" class="editable-value" data-field-name="Depreciated Cost of Improvements"><strong>{{ data|get_item:"Depreciated Cost of Improvements"|default_if_none:"" }}</strong></td></tr>
+                    <tr><td>As-is Value of Site Improvements</td><td contenteditable="true" class="editable-value" data-field-name="As-is Value of Site Improvements">{{ data|get_item:"As-is Value of Site Improvements"|default_if_none:"" }}</td></tr>
+                    
+                    <tr style="background-color: #f3f4f6;">
+                        <td><strong>Indicated Value By Cost Approach</strong></td>
+                        <td contenteditable="true" class="editable-value" data-field-name="Indicated Value By Cost Approach"><strong>{{ data|get_item:"Indicated Value By Cost Approach"|default_if_none:"" }}</strong></td>
+                    </tr>
+                    <tr><td>Comments on Cost Approach (gross living area calculations, depreciation, etc.)</td><td contenteditable="true" class="editable-value" data-field-name="Comments on Cost Approach (gross living area calculations, depreciation, etc.)">{{ data|get_item:"Comments on Cost Approach (gross living area calculations, depreciation, etc.)"|default_if_none:"" }}</td></tr>
+                    <tr><td>Estimated Remaining Economic Life (HUD and VA only)</td><td contenteditable="true" class="editable-value" data-field-name="Estimated Remaining Economic Life (HUD and VA only)">{{ data|get_item:"Estimated Remaining Economic Life (HUD and VA only)"|default_if_none:"" }}</td></tr>
+                </tbody>
+            </table>
+        {% else %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key, value in data.items %}
+                        <tr>
+                            <td>{{ key }}</td>
+                            <td contenteditable="true" class="editable-value" data-field-name="{{ key }}">{{ value|default_if_none:"" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const timerDisplay = document.getElementById('review-timer');
+            if (timerDisplay) {
+                let timerInterval;
+                // Get start time from session storage, or create it if it doesn't exist
+                let startTime = sessionStorage.getItem('reviewStartTime');
+                if (!startTime) {
+                    startTime = Date.now();
+                    sessionStorage.setItem('reviewStartTime', startTime);
+                }
+
+                function updateTimer() {
+                    const now = Date.now();
+                    const elapsed = Math.floor((now - startTime) / 1000); // total seconds
+
+                    const hours = Math.floor(elapsed / 3600);
+                    const minutes = Math.floor((elapsed % 3600) / 60);
+                    const secs = elapsed % 60;
+
+                    const formattedTime =
+                        String(hours).padStart(2, '0') + ':' +
+                        String(minutes).padStart(2, '0') + ':' +
+                        String(secs).padStart(2, '0');
+                    timerDisplay.textContent = formattedTime;
+                }
+                updateTimer(); // Run once immediately
+                timerInterval = setInterval(updateTimer, 1000);
+            }
+            const links = document.querySelectorAll('.section-link');
+            const loadingOverlay = document.getElementById('loading-overlay');
+
+            // --- Revision Functionality ---
+            const editableCells = document.querySelectorAll('.editable-value');
+
+            editableCells.forEach(cell => {
+                // Store original value
+                // Use innerHTML to preserve any formatting like <strong> if present, but trim whitespace
+                cell.dataset.originalValue = cell.innerHTML.trim();
+                // Add title for easy comparison on hover
+                cell.title = `Original: ${cell.dataset.originalValue.replace(/<[^>]*>/g, '')}`; // Remove HTML tags for title
+
+                cell.addEventListener('input', function() {
+                    const currentValue = this.innerHTML.trim(); // Use innerHTML for comparison
+                    const originalValue = this.dataset.originalValue;
+
+                    if (currentValue !== originalValue) {
+                        this.classList.add('changed-value');
+                        // Update title to show current vs original (removing HTML tags for readability)
+                        this.title = `Original: ${originalValue.replace(/<[^>]*>/g, '')}\nCurrent: ${currentValue.replace(/<[^>]*>/g, '')}`;
+                    } else {
+                        this.classList.remove('changed-value');
+                        // Reset title to just original
+                        this.title = `Original: ${originalValue.replace(/<[^>]*>/g, '')}`;
+                    }
+                });
+            });
+            // --- End Revision Functionality ---
+
+            links.forEach(link => {
+                link.addEventListener('click', function() {
+                    // Show the loading spinner when a section link is clicked
+                    loadingOverlay.style.display = 'flex';
+                });
+            });
+
+            function runValidations() {
+                const validationContainer = document.getElementById('validation-container');
+                // Clear previous validation messages before running again
+                validationContainer.innerHTML = '';
+
+                const tableRows = document.querySelectorAll('tbody tr');
+
+                {% if section_key == 'subject' %}
+                // Validation for "Purchase Transaction" requiring "Contract" section
+                let assignmentType = null;
+                // Clear the session storage flag initially on subject page load
+                sessionStorage.removeItem('isPurchaseTransaction');
+                // Clear PUD flag to avoid stale data from previous file reviews
+                sessionStorage.removeItem('isPUD');
+                sessionStorage.removeItem('subjectLenderClient');
+                sessionStorage.removeItem('isRefinanceTransaction');
+
+                tableRows.forEach(row => {
+                    const fieldCell = row.querySelector('td:first-child');
+                    const valueCell = row.querySelector('td:last-child');
+                    if (fieldCell && fieldCell.textContent.trim() === 'Assignment Type') {
+                        // Capture Assignment Type for conditional validation
+                        assignmentType = valueCell.textContent.trim();
+                    }
+                    // Capture Lender/Client for cross-validation
+                    if (fieldCell && fieldCell.textContent.trim() === 'Lender/Client') {
+                        const lenderClientName = valueCell.textContent.trim();
+                        if (lenderClientName && lenderClientName !== '--' && lenderClientName !== 'null') {
+                            sessionStorage.setItem('subjectLenderClient', lenderClientName);
+                        }
+                    }
+                });
+
+                if (assignmentType === 'Purchase Transaction') {
+                    // Set a flag in session storage to be used by the 'Contract' section validation
+                    sessionStorage.setItem('isPurchaseTransaction', 'true');
+
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message', 'validation-warning');
+                    messageDiv.textContent = "⚠️ Warning: Assignment Type is 'Purchase Transaction'. Please ensure the 'Contract' section is filled out as required.";
+                    validationContainer.appendChild(messageDiv);
+                } else if (assignmentType === 'Refinance Transaction') {
+                    // Set a flag for refinance transactions
+                    sessionStorage.setItem('isRefinanceTransaction', 'true');
+
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message', 'validation-warning');
+                    messageDiv.textContent = "ℹ️ Info: Assignment Type is 'Refinance Transaction'. The 'Contract' section should be blank.";
+                    validationContainer.appendChild(messageDiv);
+                }
+
+                // New Validation: Check for address consistency reminder
+                const addressFields = ['Property Address', 'City', 'State', 'Zip Code'];
+                let addressValues = {};
+                let allAddressFieldsPresent = true;
+
+                tableRows.forEach(row => {
+                    const fieldCell = row.querySelector('td:first-child');
+                    const valueCell = row.querySelector('td:last-child');
+                    if (fieldCell && valueCell) {
+                        const fieldName = fieldCell.textContent.trim();
+                        if (addressFields.includes(fieldName)) {
+                            const value = valueCell.textContent.trim();
+                            if (value && value !== '--' && value !== 'null') {
+                                addressValues[fieldName] = value;
+                            }
+                        }
+                    }
+                });
+
+                // Check if all parts of the address were found
+                if (Object.keys(addressValues).length !== addressFields.length) {
+                    allAddressFieldsPresent = false;
+                }
+
+                if (allAddressFieldsPresent) {
+                    const fullAddress = `${addressValues['Property Address']}, ${addressValues['City']}, ${addressValues['State']} ${addressValues['Zip Code']}`;
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message', 'validation-warning');
+                    messageDiv.textContent = `ℹ️ Consistency Check: Please verify that the address "${fullAddress}" matches the address shown in the Sales Grid, Location Map, Aerial Map, and on Subject Photos.`;
+                    validationContainer.appendChild(messageDiv);
+                }
+
+                // --- New Comprehensive Subject Field Validation ---
+                const alwaysRequiredFields = [
+                    'Property Address', 'City', 'County', 'State', 'Zip Code', 'Borrower', 'Owner of Public Record',
+                    'Legal Description', "Assessor's Parcel #", 'Tax Year', 'R.E. Taxes $', 'Neighborhood Name', 'Map Reference',
+                    'Census Tract', 'Occupant', 'Special Assessments $', 'PUD',
+                    'Property Rights Appraised', 'Assignment Type', 'Lender/Client', 'Address (Lender/Client)',
+                    'Offered for Sale in Last 12 Months'
+                ];
+                const missingRequiredFields = [];
+                let pudValue = '';
+                let hoaValue = '';
+                let hoaTermValue = '';
+                let offeredForSaleValue = '';
+                let offeredForSaleDetails = '';
+                let reTaxesValue = '';
+
+                tableRows.forEach(row => {
+                    const fieldCell = row.querySelector('td:first-child');
+                    const valueCell = row.querySelector('td:last-child');
+                    if (fieldCell && valueCell) {
+                        const fieldName = fieldCell.textContent.trim();
+                        const value = valueCell.textContent.trim();
+
+                        // Check if always-required fields are empty
+                        if (alwaysRequiredFields.includes(fieldName) && (!value || value === '--' || value === 'null')) {
+                            missingRequiredFields.push(fieldName);
+                        }
+
+                        // Capture values for conditional checks
+                        if (fieldName === 'PUD') pudValue = value.toLowerCase();
+                        if (fieldName === 'HOA $') hoaValue = value;
+                        if (fieldName === 'HOA(per year/per month)') hoaTermValue = value;
+                        if (fieldName === 'Offered for Sale in Last 12 Months') offeredForSaleValue = value.toLowerCase();
+                        if (fieldName === 'Report data source(s) used, offering price(s), and date(s)') offeredForSaleDetails = value.toLowerCase();
+                        if (fieldName === 'R.E. Taxes $') reTaxesValue = value;
+                    }
+                });
+
+                // Display message for missing always-required fields
+                if (missingRequiredFields.length > 0) {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message', 'validation-error');
+                    messageDiv.textContent = `⚠️ Validation warning: The following required fields are empty: ${missingRequiredFields.join(', ')}.`;
+                    validationContainer.appendChild(messageDiv);
+                }
+
+                // Validation for R.E. Taxes $
+                if (reTaxesValue && reTaxesValue !== '--' && reTaxesValue !== 'null') {
+                    const taxAmount = parseFloat(reTaxesValue.replace(/[$,]/g, ''));
+                    if (!isNaN(taxAmount)) {
+                        // Check if the integer part has more than 4 digits
+                        if (Math.trunc(taxAmount).toString().length > 4) {
+                            const messageDiv = document.createElement('div');
+                            messageDiv.classList.add('validation-message', 'validation-error');
+                            messageDiv.textContent = `⚠️ Validation warning: 'R.E. Taxes $' value (${reTaxesValue}) appears to have more than 4 digits. Please verify.`;
+                            validationContainer.appendChild(messageDiv);
+                        }
+                    }
+                }
+
+                // Conditional Validation for PUD
+                if (pudValue === 'yes') {
+                    // Set flag for other sections
+                    sessionStorage.setItem('isPUD', 'true');
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message');
+
+                    const hoaAmount = parseFloat(hoaValue.replace(/[$,]/g, ''));
+                    const isHoaAmountInvalid = isNaN(hoaAmount) || hoaAmount <= 0;
+                    const isHoaTermMissing = !hoaTermValue || hoaTermValue === '--' || hoaTermValue === 'null';
+
+                    if (isHoaAmountInvalid || isHoaTermMissing) {
+                        messageDiv.classList.add('validation-error');
+                        let errorParts = [];
+                        if (isHoaAmountInvalid) errorParts.push("'HOA $' must be a number greater than 0");
+                        if (isHoaTermMissing) errorParts.push("'HOA(per year/per month)' must be filled");
+                        messageDiv.textContent = `⚠️ Validation warning: PUD is 'Yes'. ${errorParts.join(' and ')}.`;
+                    } else {
+                        messageDiv.classList.add('validation-success');
+                        messageDiv.textContent = `✅ Validation successful: PUD is 'Yes' and HOA details are correctly filled.`;
+                    }
+                    validationContainer.appendChild(messageDiv);
+
+                    // Add the warning for the PUD Info section as well
+                    const pudInfoWarningDiv = document.createElement('div');
+                    pudInfoWarningDiv.classList.add('validation-message', 'validation-warning');
+                    pudInfoWarningDiv.textContent = "ℹ️ Info: PUD is marked as 'Yes'. Please ensure the 'PUD Info' section is filled out completely.";
+                    validationContainer.appendChild(pudInfoWarningDiv);
+                }
+
+                // Conditional Validation for 'Offered for Sale'
+                if (offeredForSaleValue === 'yes') {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message');
+                    const detailsMissing = !offeredForSaleDetails || offeredForSaleDetails === '--' || offeredForSaleDetails === 'null';
+                    const keywords = ['dom', 'listed'];
+                    const missingKeywords = keywords.filter(kw => !offeredForSaleDetails.includes(kw));
+                    const hasMls = offeredForSaleDetails.includes('mls') || offeredForSaleDetails.includes('multiple listing service');
+
+                    if (detailsMissing || missingKeywords.length > 0 || !hasMls) {
+                        messageDiv.classList.add('validation-error');
+                        let errorMsg = "⚠️ Validation warning: 'Offered for Sale' is 'Yes', but the details are incomplete. ";
+                        let errorParts = [];
+                        if (detailsMissing) errorMsg += "The details field is empty.";
+                        if (missingKeywords.length > 0) errorParts.push(`missing keywords: ${missingKeywords.join(', ')}`);
+                        if (!hasMls) errorParts.push("missing 'MLS' or 'Multiple Listing Service'");
+                        if (errorParts.length > 0) errorMsg += `Details are incomplete: ${errorParts.join('; ')}.`;
+                        messageDiv.textContent = errorMsg;
+                    } else {
+                        messageDiv.classList.add('validation-success');
+                        messageDiv.textContent = `✅ Validation successful: 'Offered for Sale' is 'Yes' and the required details (DOM, listing, listing date, MLS) are present.`;
+                    }
+                    validationContainer.appendChild(messageDiv);
+                }
+                
+                // Info message for Lender/Client validation
+                if (sessionStorage.getItem('subjectLenderClient')) {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message', 'validation-warning');
+                    messageDiv.textContent = `ℹ️ Info: The Lender/Client name will be cross-referenced with the 'Certification' section for consistency.`;
+                    validationContainer.appendChild(messageDiv);
+                }
+                {% endif %}
+
+                {% if section_key == 'contract' %}
+                // Validation for 'Refinance Transaction' requiring a blank 'Contract' section
+                if (sessionStorage.getItem('isRefinanceTransaction') === 'true') {
+                    let allFieldsBlank = true;
+                    const nonEmptyFields = [];
+
+                    tableRows.forEach(row => {
+                        const fieldCell = row.querySelector('td:first-child');
+                        const valueCell = row.querySelector('td:last-child');
+                        const value = valueCell.textContent.trim();
+
+                        if (value && value !== '--' && value !== 'null') {
+                            allFieldsBlank = false;
+                            nonEmptyFields.push(fieldCell.textContent.trim());
+                        }
+                    });
+
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message');
+
+                    if (allFieldsBlank) {
+                        messageDiv.classList.add('validation-success');
+                        messageDiv.textContent = '✅ Validation successful: Contract section is blank as required for a Refinance Transaction.';
+                    } else {
+                        messageDiv.classList.add('validation-error');
+                        messageDiv.textContent = `⚠️ Validation warning: For a Refinance Transaction, the Contract section should be blank. The following fields have values: ${nonEmptyFields.join(', ')}.`;
+                    }
+                    validationContainer.appendChild(messageDiv);
+                }
+                // Validation for contract analysis based on 'isPurchaseTransaction' flag
+                if (sessionStorage.getItem('isPurchaseTransaction') === 'true') {
+                    const contractAnalysisField = 'I _____ analyze the contract for sale for the subject purchase transaction.';
+                    let analysisValue = null;
+
+                    tableRows.forEach(row => {
+                        const fieldCell = row.querySelector('td:first-child');
+                        if (fieldCell && fieldCell.textContent.trim().startsWith(contractAnalysisField)) {
+                            const valueCell = row.querySelector('td:last-child');
+                            analysisValue = valueCell.textContent.trim();
+                        }
+                    });
+
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message');
+
+                    if (analysisValue && analysisValue.toLowerCase() === 'did') {
+                        messageDiv.classList.add('validation-success');
+                        messageDiv.textContent = '✅ Validation successful: Contract analysis is marked as "did", which is required for a Purchase Transaction.';
+                    } else {
+                        messageDiv.classList.add('validation-error');
+                        messageDiv.textContent = '⚠️ Validation warning: For a Purchase Transaction, the contract analysis must be "did", not "did not". The current value is not valid.';
+                    }
+                    validationContainer.appendChild(messageDiv);
+
+                    // New validation: Check if all fields are filled for a Purchase Transaction
+                    const missingFields = [];
+                    let financialAssistanceValue = null;
+
+                    // First pass to get the value of the financial assistance question
+                    tableRows.forEach(row => {
+                        const fieldCell = row.querySelector('td:first-child');
+                        const valueCell = row.querySelector('td:last-child');
+                        if (fieldCell && valueCell) {
+                            const fieldName = fieldCell.textContent.trim();
+                            if (fieldName.includes('Is there any financial assistance')) {
+                                financialAssistanceValue = valueCell.textContent.trim().toLowerCase();
+                            }
+                        }
+                    });
+
+                    tableRows.forEach(row => {
+                        const fieldCell = row.querySelector('td:first-child');
+                        const valueCell = row.querySelector('td:last-child');
+                        const fieldName = fieldCell.textContent.trim();
+                        const value = valueCell.textContent.trim();
+                        const isFinancialAssistanceDetailsField = fieldName.includes('If Yes, report the total dollar amount');
+
+                        // The details field is only required if financial assistance is 'yes'.
+                        if (isFinancialAssistanceDetailsField && financialAssistanceValue !== 'yes') {
+                            // Skip this field, it's not required to be filled.
+                        } else if (!value || value === '--' || value === 'null') {
+                            missingFields.push(fieldCell.textContent.trim());
+                        }
+                    });
+
+                    const allFieldsMessageDiv = document.createElement('div');
+                    allFieldsMessageDiv.classList.add('validation-message');
+                    if (missingFields.length > 0) {
+                        allFieldsMessageDiv.classList.add('validation-error');
+                        allFieldsMessageDiv.textContent = `⚠️ Validation warning: For a Purchase Transaction, all Contract fields must be filled. The following fields are empty: ${missingFields.join(', ')}.`;
+                    } else {
+                        allFieldsMessageDiv.classList.add('validation-success');
+                        allFieldsMessageDiv.textContent = '✅ Validation successful: All fields in the Contract section are filled as required for a Purchase Transaction.';
+                    }
+                    validationContainer.appendChild(allFieldsMessageDiv);
+                }
+
+                // New validation: If contract analysis is 'did', all fields must be filled.
+                if (sessionStorage.getItem('isPurchaseTransaction') !== 'true') { // Only run if not already covered by purchase validation
+                    const contractAnalysisField = 'I _____ analyze the contract for sale for the subject purchase transaction.';
+                    let analysisValue = null;
+                    tableRows.forEach(row => {
+                        const fieldCell = row.querySelector('td:first-child');
+                        if (fieldCell && fieldCell.textContent.trim().startsWith(contractAnalysisField)) {
+                            const valueCell = row.querySelector('td:last-child');
+                            analysisValue = valueCell.textContent.trim().toLowerCase();
+                        }
+                    });
+
+                    if (analysisValue && analysisValue === 'did') {
+                        const missingFields = [];
+                        tableRows.forEach(row => {
+                            const fieldCell = row.querySelector('td:first-child');
+                            const valueCell = row.querySelector('td:last-child');
+                            const value = valueCell.textContent.trim();
+
+                            if (!value || value === '--' || value === 'null') {
+                                missingFields.push(fieldCell.textContent.trim());
+                            }
+                        });
+
+                        if (missingFields.length > 0) {
+                            const messageDiv = document.createElement('div');
+                            messageDiv.classList.add('validation-message', 'validation-error');
+                            messageDiv.textContent = `⚠️ Validation warning: Since contract analysis was performed ('did'), all fields in this section must be filled. The following are empty: ${missingFields.join(', ')}.`;
+                            validationContainer.appendChild(messageDiv);
+                        }
+                    }
+                }
+                // New validation for financial assistance
+                let financialAssistanceValue = ''; // Initialize to empty string
+                let financialAssistanceDetailsValue = null;
+                const financialAssistanceField = 'Is there any financial assistance (loan charges, sale concessions, gift or downpay i etc.) to be paid by any party on behalf of the borrower?(Yes/No)';
+                const financialAssistanceDetailsField = 'If Yes, report the total dollar amount and describe the items to be paid.';
+
+                tableRows.forEach(row => {
+                    const fieldCell = row.querySelector('td:first-child');
+                    const valueCell = row.querySelector('td:last-child');
+                    if (fieldCell && valueCell) {
+                        const fieldName = fieldCell.textContent.trim();
+                        const value = valueCell.textContent.trim();
+
+                        if (fieldName.includes('Is there any financial assistance')) { // Use includes for robustness
+                            financialAssistanceValue = value.toLowerCase();
+                        }
+                        if (fieldName.includes('If Yes, report the total dollar amount')) { // Use includes for robustness
+                            financialAssistanceDetailsValue = value;
+                        }
+                    }
+                });
+
+                // Helper to check if a value is effectively empty
+                const isEmpty = (val) => !val || val === '--' || val === 'null';
+
+                if (financialAssistanceValue === 'yes') {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message');
+
+                    if (isEmpty(financialAssistanceDetailsValue)) {
+                        messageDiv.classList.add('validation-error');
+                        messageDiv.textContent = `⚠️ Validation warning: Financial assistance is marked 'Yes', but the description of the dollar amount and items is missing.`;
+                    } else {
+                        // Check for presence of a dollar amount (e.g., $1,234.56 or 1234.56)
+                        const hasDollarAmount = /\$\s*\d{1,3}(?:,\d{3})*(?:\.\d{2})?|\d{1,3}(?:,\d{3})*(?:\.\d{2})?/.test(financialAssistanceDetailsValue);
+                        // Check for some descriptive text (more than just a number or simple symbol)
+                        // This regex checks for at least 5 non-numeric/non-symbol characters
+                        const hasDescription = financialAssistanceDetailsValue.replace(/[\d\s$,.\-]/g, '').length > 5;
+
+                        if (hasDollarAmount && hasDescription) {
+                            messageDiv.classList.add('validation-success');
+                            messageDiv.textContent = `✅ Validation successful: Financial assistance is marked 'Yes' and the details field contains both a dollar amount and a description.`;
+                        } else if (!hasDollarAmount && !hasDescription) {
+                            messageDiv.classList.add('validation-error');
+                            messageDiv.textContent = `⚠️ Validation warning: Financial assistance is marked 'Yes', but the details field appears to be missing both a dollar amount and a description of items.`;
+                        } else if (!hasDollarAmount) {
+                            messageDiv.classList.add('validation-error');
+                            messageDiv.textContent = `⚠️ Validation warning: Financial assistance is marked 'Yes', but the details field appears to be missing a dollar amount.`;
+                        } else { // !hasDescription
+                            messageDiv.classList.add('validation-error');
+                            messageDiv.textContent = `⚠️ Validation warning: Financial assistance is marked 'Yes', but the details field appears to be missing a description of items.`;
+                        }
+                    }
+                    validationContainer.appendChild(messageDiv);
+                } else if (financialAssistanceValue === 'no') {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message');
+
+                    // Allow "$0;;" as a valid "empty" value when assistance is 'No'.
+                    if (!isEmpty(financialAssistanceDetailsValue) && financialAssistanceDetailsValue !== '$0;;') {
+                        messageDiv.classList.add('validation-error');
+                        messageDiv.textContent = `⚠️ Validation warning: Financial assistance is marked 'No', but the details field contains information. It should be blank.`;
+                    } else {
+                        messageDiv.classList.add('validation-success');
+                        messageDiv.textContent = `✅ Validation successful: Financial assistance is marked 'No' and the details field is blank.`;
+                    }
+                    validationContainer.appendChild(messageDiv);
+                } else { // financialAssistanceValue is blank or invalid
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message', 'validation-error');
+                    messageDiv.textContent = `⚠️ Validation warning: 'Is there any financial assistance...' field must be marked 'Yes' or 'No'. It is currently blank.`;
+                    validationContainer.appendChild(messageDiv);
+                }
+                {% endif %}
+                
+                {% if section_key == 'neighborhood' %}
+                // Validation for Neighborhood section percentages
+                const fieldsToSum = ['One-Unit', '2-4 Unit', 'Multi-Family', 'Commercial', 'Other'];
+                let totalPercentage = 0;
+                let fieldsFoundCount = 0;
+
+                const missingFields = [];
+                let otherPercentage = 0;
+                let otherDescription = null;
+
+                tableRows.forEach(row => {
+                    const fieldCell = row.querySelector('td:first-child');
+                    const valueCell = row.querySelector('td:last-child');
+
+                    if (fieldCell && valueCell) {
+                        const fieldName = fieldCell.textContent.trim();
+                        const valueText = valueCell.textContent.trim();
+
+                        // Check if any field is empty, but exclude 'Present Land Use Other Description' for now
+                        if (fieldName !== 'Present Land Use Other Description') {
+                            if (!valueText || valueText === '--' || valueText === 'null') {
+                                missingFields.push(fieldName);
+                            }
+                        }
+
+                        if (fieldName === 'Other') {
+                            const numericValue = parseFloat(valueText);
+                            if (!isNaN(numericValue)) {
+                                otherPercentage = numericValue;
+                            }
+                        } else if (fieldName === 'Present Land Use Other Description') {
+                            otherDescription = valueText;
+                        }
+
+                        if (fieldsToSum.includes(fieldName)) {
+                            fieldsFoundCount++;
+                            const valueText = valueCell.textContent.trim();
+                            // Use parseFloat which ignores trailing non-numeric characters like '%'
+                            const numericValue = parseFloat(valueText);
+                            if (!isNaN(numericValue)) {
+                                totalPercentage += numericValue;
+                            }
+                        }
+                    }
+                });
+
+                if (fieldsFoundCount > 0) {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message');
+
+                    const isTotal100 = Math.abs(totalPercentage - 100) < 0.01;
+                    const isOtherDescriptionMissing = !otherDescription || otherDescription === '--' || otherDescription === 'null' || otherDescription === '';
+
+                    if (isTotal100) {
+                        if (otherPercentage > 0 && isOtherDescriptionMissing) {
+                            // Special case: Total is 100% but 'Other' has a value and needs a description.
+                            messageDiv.classList.add('validation-error');
+                            messageDiv.textContent = `⚠️ Validation warning: The sum is 100%, but 'Other' is ${otherPercentage}% and its description is missing. Please provide a comment.`;
+                        } else {
+                            messageDiv.classList.add('validation-success');
+                            messageDiv.textContent = `✅ Validation successful: The sum of housing unit types is ${totalPercentage}%.`;
+                        }
+                    } else if (fieldsFoundCount === 0) {
+                        // Do nothing if no percentage fields were found
+                    } else {
+                        messageDiv.classList.add('validation-error');
+                        messageDiv.textContent = `⚠️ Validation warning: The sum of housing unit types is ${totalPercentage}%, which is not 100%.`;
+                    }
+                    validationContainer.appendChild(messageDiv);
+                }
+
+                // Conditionally check if 'Present Land Use Other Description' is required
+                const isOtherDescriptionMissing = !otherDescription || otherDescription === '--' || otherDescription === 'null' || otherDescription === '';
+                if (otherPercentage > 0 && isOtherDescriptionMissing) {
+                    missingFields.push('Present Land Use Other Description');
+                }
+
+                // Display message for any missing fields in the section
+                if (missingFields.length > 0) {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message', 'validation-error');
+                    messageDiv.textContent = `⚠️ Validation warning: The following required fields are empty: ${missingFields.join(', ')}.`;
+                    validationContainer.appendChild(messageDiv);
+                }
+
+                // Specific validation for Neighborhood Boundaries
+                tableRows.forEach(row => {
+                    const fieldCell = row.querySelector('td:first-child');
+                    if (fieldCell && fieldCell.textContent.trim() === 'Neighborhood Boundaries') {
+                        const valueCell = row.querySelector('td:last-child');
+                        const valueText = valueCell.textContent.trim().toLowerCase();
+                        
+                        const missingDirections = [];
+                        if (!valueText.includes('north')) missingDirections.push('North');
+                        if (!valueText.includes('south')) missingDirections.push('South');
+                        if (!valueText.includes('east')) missingDirections.push('East');
+                        if (!valueText.includes('west')) missingDirections.push('West');
+
+                        if (valueText && missingDirections.length > 0) {
+                            const messageDiv = document.createElement('div');
+                            messageDiv.classList.add('validation-message', 'validation-error');
+                            messageDiv.textContent = `⚠️ Validation error: The 'Neighborhood Boundaries' description is missing directional words: ${missingDirections.join(', ')}. Please ensure it is sufficiently detailed (e.g., "North: Main St, South: Oak Ave, East: RR Tracks, West: City Park").`;
+                            validationContainer.appendChild(messageDiv);
+                        } else if (valueText && valueText.length > 0 && valueText.length < 50) {
+                            const messageDiv = document.createElement('div');
+                            messageDiv.classList.add('validation-message', 'validation-warning');
+                            messageDiv.textContent = `⚠️ Validation warning: The 'Neighborhood Boundaries' description seems short. Please ensure it is sufficiently detailed.`;
+                            validationContainer.appendChild(messageDiv);
+                        }
+                    }
+                });
+                {% endif %}
+
+                {% if section_key == 'neighborhood' %}
+                // Validation for 'Other' land use description (standalone check)
+                let otherPercentageStandalone = 0;
+                let otherDescriptionStandalone = null;
+
+                tableRows.forEach(row => {
+                    const fieldCell = row.querySelector('td:first-child');
+                    const valueCell = row.querySelector('td:last-child');
+
+                    if (fieldCell && valueCell) {
+                        const fieldName = fieldCell.textContent.trim();
+                        const valueText = valueCell.textContent.trim();
+
+                        if (fieldName === 'Other') {
+                            const numericValue = parseFloat(valueText);
+                            if (!isNaN(numericValue)) {
+                                otherPercentageStandalone = numericValue;
+                            }
+                        } else if (fieldName === 'Present Land Use Other Description') {
+                            otherDescriptionStandalone = valueText;
+                        }
+                    }
+                });
+
+                if (otherPercentageStandalone > 0) {
+                    const isDescriptionMissing = !otherDescriptionStandalone || otherDescriptionStandalone === '--' || otherDescriptionStandalone === 'null' || otherDescriptionStandalone === '';
+                    // This message only shows if the main percentage sum validation didn't already cover it.
+                    // We check if a similar message already exists.
+                    const existingWarning = validationContainer.querySelector('.validation-error');
+                    if (isDescriptionMissing && !existingWarning) {
+                        const messageDiv = document.createElement('div');
+                        messageDiv.classList.add('validation-message', 'validation-error');
+                        messageDiv.textContent = `⚠️ Validation warning: The 'Other' land use is ${otherPercentageStandalone}%, but the description (e.g., 'vacant land', 'garden') is missing.`;
+                        validationContainer.appendChild(messageDiv);
+                    } else if (!isDescriptionMissing) {
+                        messageDiv.classList.add('validation-success');
+                        messageDiv.textContent = `✅ Validation successful: The 'Other' land use is ${otherPercentageStandalone}% and a description is provided.`;
+                        validationContainer.appendChild(messageDiv);
+                    }
+                }
+                {% endif %}
+
+                {% if section_key == 'site' %}
+                // --- Comprehensive Site Section Validation ---
+                const requiredFields = ['Dimensions', 'Area', 'Shape', 'View', 'Specific Zoning Classification', 'Zoning Description'];
+                const missingRequiredFields = [];
+
+                tableRows.forEach(row => {
+                    const fieldCell = row.querySelector('td:first-child');
+                    const valueCell = row.querySelector('td:last-child');
+                    if (fieldCell && valueCell) {
+                        const fieldName = fieldCell.textContent.trim();
+                        const value = valueCell.textContent.trim();
+                        const valueLower = value.toLowerCase();
+
+                        // 1. Check for blank required fields
+                        if (requiredFields.includes(fieldName) && (!value || value === '--' || value === 'null')) {
+                            missingRequiredFields.push(fieldName);
+                        }
+
+                        // 2. Area validation
+                        if (fieldName === 'Area' && value) {
+                            const areaValue = parseFloat(value.replace(/,/g, ''));
+                            if (!isNaN(areaValue) && areaValue > 43500) {
+                                if (!valueLower.includes('ac')) { // Check for 'ac' or 'acres'
+                                    const messageDiv = document.createElement('div');
+                                    messageDiv.classList.add('validation-message', 'validation-error');
+                                    messageDiv.textContent = `⚠️ Validation warning: Area is greater than 43,500 sq ft. The unit should be in Acres (AC). Current value: ${value}.`;
+                                    validationContainer.appendChild(messageDiv);
+                                }
+                            }
+                        }
+
+                        // 3. Zoning Description validation
+                        if (fieldName === 'Zoning Description' && valueLower.includes('agr')) {
+                            const messageDiv = document.createElement('div');
+                            messageDiv.classList.add('validation-message', 'error');
+                            messageDiv.innerHTML = `<strong>⚠️ CRITICAL WARNING: Zoning Description contains 'Agriculture'/'agr'. This is not acceptable.</strong>`;
+                            validationContainer.appendChild(messageDiv);
+                        }
+
+                        // 4. Zoning Compliance validation
+                        if (fieldName === 'Zoning Compliance') {
+                            const messageDiv = document.createElement('div');
+                            messageDiv.classList.add('validation-message');
+                            if (value === 'Legal') {
+                                messageDiv.classList.add('validation-success');
+                                messageDiv.textContent = '✅ Zoning Compliance is "Legal".';
+                            } else if (value === 'Illegal') {
+                                messageDiv.classList.add('error');
+                                messageDiv.innerHTML = `<strong>⚠️ CRITICAL WARNING: Zoning Compliance is "Illegal". Please stop review and freeze further modules.</strong>`;
+                                document.querySelectorAll('.sidebar a:not(.active)').forEach(link => {
+                                    link.style.pointerEvents = 'none';
+                                    link.style.opacity = '0.5';
+                                    link.title = 'Navigation disabled due to critical error.';
+                                });
+                            } else if (['Legal Nonconforming', 'No Zoning'].includes(value)) {
+                                messageDiv.classList.add('validation-warning');
+                                messageDiv.textContent = `⚠️ Warning: Zoning Compliance is "${value}". Please ensure a comment/explanation is provided in the report.`;
+                            }
+                            validationContainer.appendChild(messageDiv);
+                        }
+
+                        // 5. Highest and Best Use validation
+                        if (fieldName === 'Is the highest and best use of subject property as improved (or as proposed per plans and specifications) the present use?') {
+                            const messageDiv = document.createElement('div');
+                            messageDiv.classList.add('validation-message');
+                            if (valueLower === 'yes') {
+                                messageDiv.classList.add('validation-success');
+                                messageDiv.textContent = `✅ Validation successful: Highest and Best Use is 'Yes'.`;
+                            } else if (valueLower === 'no') {
+                                messageDiv.classList.add('error');
+                                messageDiv.innerHTML = `<strong>⚠️ CRITICAL WARNING: Highest and Best Use is 'No'. This is not acceptable.</strong>`;
+                            } else {
+                                messageDiv.classList.add('validation-error');
+                                messageDiv.textContent = `⚠️ Validation error: Highest and Best Use must be marked 'Yes' or 'No'. It is currently blank.`;
+                            }
+                            validationContainer.appendChild(messageDiv);
+                        }
+
+                        // 6. Utilities validation
+                        const standardUtilityFields = ['Electricity', 'Gas', 'Water', 'Sanitary Sewer'];
+                        const streetAlleyFields = ['Street', 'Alley'];
+
+                        if (standardUtilityFields.includes(fieldName)) {
+                            if (valueLower.includes('public') && valueLower.includes('private')) {
+                                const messageDiv = document.createElement('div');
+                                messageDiv.classList.add('validation-message', 'validation-error');
+                                messageDiv.textContent = `⚠️ Validation warning: Utility '${fieldName}' cannot be both Public and Private.`;
+                                validationContainer.appendChild(messageDiv);
+                            } else if ((valueLower.includes('private') || valueLower.includes('other')) && value.split(/[\s/]/).length < 2) {
+                                const messageDiv = document.createElement('div');
+                                messageDiv.classList.add('validation-message', 'validation-error');
+                                messageDiv.textContent = `⚠️ Validation warning: Utility '${fieldName}' is marked 'Private' or 'Other' but is missing a required comment (e.g., 'Private-Well').`;
+                                validationContainer.appendChild(messageDiv);
+                            } else if (!value || value === '--' || value === 'null') {
+                                const messageDiv = document.createElement('div');
+                                messageDiv.classList.add('validation-message', 'validation-error');
+                                messageDiv.textContent = `⚠️ Validation warning: Utility '${fieldName}' is blank. A selection (e.g., Public, Private, None) is required.`;
+                                validationContainer.appendChild(messageDiv);
+                            }
+                        } else if (streetAlleyFields.includes(fieldName)) {
+                            const validPrefixes = ['public', 'private'];
+                            let isCorrectPrefix = false;
+                            for (const prefix of validPrefixes) {
+                                if (valueLower.startsWith(prefix)) {
+                                    isCorrectPrefix = true;
+                                    break;
+                                }
+                            }
+
+                            if (!value || value === '--' || value === 'null') {
+                                const messageDiv = document.createElement('div');
+                                messageDiv.classList.add('validation-message', 'validation-error');
+                                messageDiv.textContent = `⚠️ Validation warning: '${fieldName}' is blank. It must be 'Public' or 'Private'.`;
+                                validationContainer.appendChild(messageDiv);
+                            } else if (!isCorrectPrefix && valueLower !== 'none') {
+                                const messageDiv = document.createElement('div');
+                                messageDiv.classList.add('validation-message', 'validation-error');
+                                messageDiv.textContent = `⚠️ Validation warning: '${fieldName}' must start with 'Public' or 'Private' (e.g., 'Public/Asphalt', 'Private/Dirt'). Current value: '${value}'.`;
+                                validationContainer.appendChild(messageDiv);
+                            }
+                        }
+
+                        // 7. Utilities/Off-site improvements typical for market area
+                        if (fieldName === 'Are the utilities and off-site improvements typical for the market area?') {
+                            const messageDiv = document.createElement('div');
+                            messageDiv.classList.add('validation-message');
+                            if (valueLower === 'yes') {
+                                messageDiv.classList.add('validation-success');
+                                messageDiv.textContent = `✅ Validation successful: Utilities and off-site improvements are typical for the market area.`;
+                            } else if (valueLower === 'no') {
+                                messageDiv.classList.add('validation-warning');
+                                messageDiv.textContent = `⚠️ Warning: Utilities/improvements are marked 'No' (not typical). Please verify an explanation is provided in the report.`;
+                            } else {
+                                messageDiv.classList.add('validation-error');
+                                messageDiv.textContent = `⚠️ Validation error: 'Utilities typical for market area' must be marked 'Yes' or 'No'. It is currently blank.`;
+                            }
+                            validationContainer.appendChild(messageDiv);
+                        }
+
+                        // 8. Adverse site conditions
+                        if (fieldName === 'Are there any adverse site conditions or external factors (easements, encroachments, environmental conditions, land uses, etc.)(Yes/No)?') {
+                            const messageDiv = document.createElement('div');
+                            messageDiv.classList.add('validation-message');
+                            if (valueLower === 'no') {
+                                messageDiv.classList.add('validation-success');
+                                messageDiv.textContent = `✅ Validation successful: No adverse site conditions reported.`;
+                            } else if (valueLower === 'yes') {
+                                messageDiv.classList.add('validation-warning');
+                                messageDiv.textContent = `⚠️ Warning: Adverse site conditions are marked 'Yes'. Please verify the description is provided and acceptable.`;
+                            } else {
+                                messageDiv.classList.add('validation-error');
+                                messageDiv.textContent = `⚠️ Validation error: 'Adverse site conditions' must be marked 'Yes' or 'No'. It is currently blank.`;
+                            }
+                            validationContainer.appendChild(messageDiv);
+                        }
+                    }
+                });
+
+                // Display message for any missing required fields
+                if (missingRequiredFields.length > 0) {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message', 'validation-error');
+                    messageDiv.textContent = `⚠️ Validation error: The following required fields are empty: ${missingRequiredFields.join(', ')}.`;
+                    validationContainer.appendChild(messageDiv);
+                }
+
+                // --- Existing Validations (FEMA, ADU, etc.) ---
+                let femaHazardAreaValue = null;
+                let femaFloodZoneValue = null;
+
+                tableRows.forEach(row => {
+                    const fieldCell = row.querySelector('td:first-child');
+                    const valueCell = row.querySelector('td:last-child');
+                    if (fieldCell && valueCell) {
+                        const fieldName = fieldCell.textContent.trim();
+                        const value = valueCell.textContent.trim();
+
+                        if (fieldName === 'FEMA Special Flood Hazard Area') {
+                            femaHazardAreaValue = value.toLowerCase();
+                        }
+                        if (fieldName === 'FEMA Flood Zone') {
+                            femaFloodZoneValue = value.toUpperCase();
+                        }
+                        if (fieldName === 'Type' && value.toLowerCase().includes('one with accessory unit')) {
+                            const messageDiv = document.createElement('div');
+                            messageDiv.classList.add('validation-message', 'validation-warning');
+                            messageDiv.textContent = `ℹ️ Info: 'One with Accessory Unit' is selected. Please verify that the ADU description is provided in the sales grid, photos, building sketch, and floor plan.`;
+                            validationContainer.appendChild(messageDiv);
+                        }
+                    }
+                });
+                
+                if (femaHazardAreaValue && femaFloodZoneValue) {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message');
+                    let isValid = false;
+
+                    if (femaHazardAreaValue === 'yes' && (femaFloodZoneValue === 'A' || femaFloodZoneValue === 'AE')) {
+                        isValid = true; 
+                    } else if (femaHazardAreaValue === 'no' && (femaFloodZoneValue === 'X' || femaFloodZoneValue === 'X500')) {
+                        isValid = true;
+                    }
+
+                    if (isValid) {
+                        messageDiv.classList.add('validation-success');
+                        messageDiv.textContent = `✅ Validation successful: FEMA Flood Zone '${femaFloodZoneValue}' is consistent with Special Flood Hazard Area being '${femaHazardAreaValue}'.`;
+                    } else { 
+                        messageDiv.classList.add('validation-error');
+                        messageDiv.textContent = `⚠️ Validation warning: FEMA Flood Zone '${femaFloodZoneValue}' is inconsistent. It should be 'A' or 'AE' if Hazard Area is 'Yes', or 'X' or 'X500' if Hazard Area is 'No'.`;
+                    }
+                    validationContainer.appendChild(messageDiv);
+                }
+                {% endif %}
+                {% if section_key == 'improvements' %}
+                // Validation for required Improvements fields
+                // --- Clear session storage for cross-page validation ---
+                sessionStorage.removeItem('improvementStatus');
+
+                // --- Helper function to get a field's value ---
+                const getFieldValue = (fieldName) => {
+                    const row = Array.from(tableRows).find(r => r.querySelector('td:first-child')?.textContent.trim() === fieldName);
+                    return row ? row.querySelector('td:last-child')?.textContent.trim() : null;
+                };
+
+                // --- Helper function to add validation messages ---
+                const addValidationMessage = (type, message) => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message', `validation-${type}`);
+                    messageDiv.innerHTML = message; // Use innerHTML to allow for bold tags
+                    validationContainer.appendChild(messageDiv);
+                };
+
+                // --- General Description Validation ---
+                const unitValue = getFieldValue('Units');
+                if (!unitValue || unitValue === '--' || unitValue === 'null') {
+                    addValidationMessage('error', "⚠️ Validation warning: 'Units' field should not be blank.");
+                }
+
+                const typeValue = getFieldValue('Type');
+                if (typeValue && typeValue.toLowerCase().includes('one with accessory unit')) {
+                    addValidationMessage('warning', "ℹ️ Info: 'One with Accessory Unit' is selected. Please verify that the ADU is described and shown in the sales grid, photos, and building sketch.");
+                }
+                if (!typeValue || typeValue === '--' || typeValue === 'null') {
+                    addValidationMessage('error', "⚠️ Validation warning: 'Type' field should not be blank. One option must be selected.");
+                }
+
+                const storiesValue = getFieldValue('# of Stories');
+                if (!storiesValue || storiesValue === '--' || storiesValue === 'null' || parseFloat(storiesValue) === 0) {
+                    addValidationMessage('error', "⚠️ Validation warning: '# of Stories' must be a non-zero number and cannot be blank.");
+                }
+
+                const statusValue = getFieldValue('Existing/Proposed/Under Const.');
+                if (statusValue) {
+                    const statuses = statusValue.split(/[/,]/).map(s => s.trim()).filter(Boolean);
+                    if (statuses.length > 1) {
+                        addValidationMessage('error', "⚠️ Validation warning: Only one option should be selected for 'Existing/Proposed/Under Const.'.");
+                    } else if (statuses.length === 1) {
+                        sessionStorage.setItem('improvementStatus', statuses[0].toLowerCase());
+                        addValidationMessage('warning', `ℹ️ Info: Improvement status is '${statuses[0]}'. This will be checked against the 'Reconciliation' section.`);
+                    }
+                } else {
+                    addValidationMessage('error', "⚠️ Validation warning: 'Existing/Proposed/Under Const.' cannot be blank.");
+                }
+
+                const designValue = getFieldValue('Design (Style)');
+                if (!designValue || designValue === '--' || designValue === 'null' || designValue === '0') {
+                    addValidationMessage('error', "⚠️ Validation warning: 'Design (Style)' cannot be blank or zero.");
+                }
+
+                if (!getFieldValue('Year Built')) addValidationMessage('error', "⚠️ Validation warning: 'Year Built' cannot be blank.");
+                if (!getFieldValue('Effective Age (Yrs)')) addValidationMessage('error', "⚠️ Validation warning: 'Effective Age (Yrs)' cannot be blank.");
+
+                // --- Foundation Validation (Updated based on user request) ---
+                const foundationTypeValue = getFieldValue('Foundation Type');
+                const basementAreaValue = getFieldValue('Basement Area sq.ft.');
+                const basementFinishValue = getFieldValue('Basement Finish');
+
+                // Helper to check if a value is effectively zero or empty
+                const isEffectivelyZero = (value) => {
+                    if (value === null || value === '' || value === '--' || value === 'null') return true;
+                    const num = parseFloat(value);
+                    return !isNaN(num) && num === 0;
+                };
+
+                // Helper to check if a value is effectively greater than zero or non-empty
+                const isEffectivelyGreaterThanZero = (value) => {
+                    if (value === null || value === '' || value === '--' || value === 'null') return false;
+                    const num = parseFloat(value);
+                    if (!isNaN(num)) return num > 0;
+                    // If it's not a number, assume it's descriptive text, and non-empty means > 0 equivalent
+                    return value.trim().length > 0;
+                };
+
+                if (foundationTypeValue) {
+                    if (foundationTypeValue.includes('Concrete Slab') && foundationTypeValue.includes('Crawl Space')) {
+                        addValidationMessage('error', "⚠️ Validation warning: Foundation Type cannot be both 'Concrete Slab' and 'Crawl Space'.");
+                    }
+                    if (foundationTypeValue.includes('Full Basement') && foundationTypeValue.includes('Partial Basement')) {
+                        addValidationMessage('error', "⚠️ Validation warning: Foundation Type cannot be both 'Full Basement' and 'Partial Basement'.");
+                    }
+
+                    // User's requested logic:
+                    if (foundationTypeValue.toLowerCase().includes('concrete slab') || foundationTypeValue.toLowerCase().includes('crawl space')) {
+                        // If Foundation Type is Concrete Slab/Crawl Space, Basement Area and Finish should be 0
+                        if (!isEffectivelyZero(basementAreaValue)) {
+                            addValidationMessage('error', `⚠️ Validation warning: Foundation Type is '${foundationTypeValue}'. 'Basement Area sq.ft.' should be 0, but is '${basementAreaValue}'.`);
+                        }
+                        if (!isEffectivelyZero(basementFinishValue)) {
+                            addValidationMessage('error', `⚠️ Validation warning: Foundation Type is '${foundationTypeValue}'. 'Basement Finish' should be 0, but is '${basementFinishValue}'.`);
+                        }
+                    } else {
+                        // Otherwise (any other foundation type), Basement Area and Finish should be > 0
+                        if (!isEffectivelyGreaterThanZero(basementAreaValue)) {
+                            addValidationMessage('error', `⚠️ Validation warning: Foundation Type is '${foundationTypeValue}'. 'Basement Area sq.ft.' should be greater than 0, but is '${basementAreaValue}'.`);
+                        }
+                        if (!isEffectivelyGreaterThanZero(basementFinishValue)) {
+                            addValidationMessage('error', `⚠️ Validation warning: Foundation Type is '${foundationTypeValue}'. 'Basement Finish' should be greater than 0, but is '${basementFinishValue}'.`);
+                        }
+                    }
+                }
+
+                const evidenceValue = getFieldValue('Evidence of');
+                if (evidenceValue && evidenceValue.toLowerCase() !== 'none' && evidenceValue.toLowerCase() !== 'n/a' && evidenceValue.trim() !== '') {
+                    addValidationMessage('error', `⚠️ Validation warning: 'Evidence of' should be unchecked (None). It is currently marked as '${evidenceValue}'. Please verify with basement photos.`);
+                }
+
+                // --- Material/Condition Validation (Exterior & Interior) ---
+                const materialConditionFields = [
+                    'Exterior Walls (Material/Condition)', 'Roof Surface (Material/Condition)', 'Gutters & Downspouts (Material/Condition)',
+                    'Window Type (Material/Condition)', 'Floors (Material/Condition)', 'Walls (Material/Condition)', 'Trim/Finish (Material/Condition)',
+                    'Bath Floor (Material/Condition)', 'Bath Wainscot (Material/Condition)'
+                ];
+                const validConditions = ['good', 'average', 'poor', 'fair'];
+                materialConditionFields.forEach(field => {
+                    const value = getFieldValue(field);
+                    if (!value || value === '--' || value === 'null') {
+                        addValidationMessage('error', `⚠️ Validation warning: '${field}' cannot be blank.`);
+                    } else if (!value.includes('/')) {
+                        addValidationMessage('error', `⚠️ Validation warning: '${field}' is missing either Material or Condition. It should be in 'Material/Condition' format.`);
+                    } else {
+                        const parts = value.split('/');
+                        const condition = parts[1]?.trim().toLowerCase();
+                        if (!condition || !validConditions.includes(condition)) {
+                             addValidationMessage('error', `⚠️ Validation warning: The condition for '${field}' ('${parts[1]?.trim()}') is not valid. It must be one of: Good, Average, Poor, Fair.`);
+                        }
+                    }
+                });
+
+                // --- Attic, Heating, Cooling ---
+                const atticValue = getFieldValue('Attic');
+                if (atticValue && !atticValue.toLowerCase().includes('none')) {
+                    addValidationMessage('warning', `ℹ️ Info: 'Attic' is marked as '${atticValue}'. Please verify photos and sketch.`);
+                }
+
+                const heatingValue = getFieldValue('Heating Type');
+                if (heatingValue && heatingValue.toLowerCase().includes('other') && heatingValue.split(/[\s/]/).length < 2) {
+                    addValidationMessage('error', "⚠️ Validation warning: 'Heating Type' is marked 'Other' but is missing a description.");
+                }
+
+                const fuelValue = getFieldValue('Fuel');
+                if (fuelValue && !['gas', 'oil'].includes(fuelValue.toLowerCase())) {
+                    addValidationMessage('warning', `⚠️ Validation warning: 'Fuel' is '${fuelValue}'. It should typically be 'Gas' or 'Oil'. Please verify.`);
+                }
+
+                const coolingValue = getFieldValue('Cooling Type');
+                if (coolingValue && coolingValue.toLowerCase().includes('other') && coolingValue.split(/[\s/]/).length < 2) {
+                    addValidationMessage('error', "⚠️ Validation warning: 'Cooling Type' is marked 'Other' but is missing a description.");
+                }
+
+                // --- Car Storage ---
+                const carStorageValue = getFieldValue('Car Storage');
+                if (carStorageValue) {
+                    if (carStorageValue.toLowerCase().includes('none')) {
+                        const relatedFields = ['Driveway # of Cars', 'Driveway Surface', 'Garage # of Cars', 'Carport # of Cars', 'Garage (Att./Det./Built-in)'];
+                        relatedFields.forEach(field => {
+                            const value = getFieldValue(field);
+                            if (value && value !== '--' && value !== 'null' && value !== '0') {
+                                addValidationMessage('error', `⚠️ Validation warning: 'Car Storage' is 'None', but '${field}' has a value.`);
+                            }
+                        });
+                    } else if (carStorageValue.toLowerCase().includes('garage')) {
+                        const garageTypeValue = getFieldValue('Garage (Att./Det./Built-in)');
+                        if (!garageTypeValue || garageTypeValue === '--' || garageTypeValue === 'null') {
+                            addValidationMessage('error', "⚠️ Validation warning: 'Car Storage' includes 'Garage', but the type (Att./Det./Built-in) is not selected.");
+                        }
+                    }
+                }
+
+                // --- Appliances ---
+                const appliancesValue = getFieldValue('Appliances (Refrigerator,Range/Oven, Dishwasher, Disposal, Microwave, Washer/Dryer, Other (describe))');
+                if (!appliancesValue || appliancesValue === '--' || appliancesValue === 'null') {
+                    addValidationMessage('error', "⚠️ Validation warning: 'Appliances' section should not be blank.");
+                } else if (appliancesValue.toLowerCase().includes('other') && appliancesValue.split(/[\s,]/).length < 2) {
+                     addValidationMessage('error', "⚠️ Validation warning: 'Appliances' is marked 'Other' but is missing a description.");
+                }
+
+                // --- Room Counts & GLA ---
+                ['Finished area above grade Rooms', 'Finished area above grade Bedrooms', 'Finished area above grade Bath(s)', 'Square Feet of Gross Living Area Above Grade'].forEach(field => {
+                    if (!getFieldValue(field)) {
+                        addValidationMessage('error', `⚠️ Validation warning: '${field}' cannot be blank.`);
+                    }
+                });
+                addValidationMessage('warning', "ℹ️ Info: Room counts and GLA will be used as a base for consistency checks in other sections.");
+
+                // --- Additional Features & Condition ---
+                const additionalFeatures = getFieldValue('Additional features');
+                if (!additionalFeatures) { // Allows 'None' but not blank
+                    addValidationMessage('error', "⚠️ Validation warning: 'Additional features' cannot be blank. Should state 'None' if not applicable.");
+                }
+
+                const conditionDesc = getFieldValue('Describe the condition of the property');
+                if (!conditionDesc) {
+                    addValidationMessage('error', "⚠️ Validation warning: 'Describe the condition of the property' cannot be blank.");
+                } else {
+                    const conditionCode = conditionDesc.match(/C[1-6]/);
+                    if (!conditionCode) {
+                        addValidationMessage('error', "⚠️ Validation warning: The property condition description must include a code from C1 to C6.");
+                    } else if (conditionCode[0] === 'C5' || conditionCode[0] === 'C6') {
+                        addValidationMessage('error', `<strong>⚠️ CRITICAL WARNING: Property condition is '${conditionCode[0]}'. This requires special attention.</strong>`);
+                    }
+                }
+
+                // --- Physical Deficiencies & Neighborhood Conformity ---
+                const physicalDeficiencies = getFieldValue('Are there any physical deficiencies or adverse conditions that affect the livability, soundness, or structural integrity of the property?');
+                if (!physicalDeficiencies) {
+                    addValidationMessage('error', "⚠️ Validation warning: 'Physical deficiencies' question cannot be blank.");
+                } else if (physicalDeficiencies.toLowerCase() === 'yes') {
+                    if (!getFieldValue('If Yes, describe')) {
+                        addValidationMessage('error', "⚠️ Validation warning: 'Physical deficiencies' is 'Yes', but the description is missing.");
+                    }
+                } else if (physicalDeficiencies.toLowerCase() !== 'no') {
+                     addValidationMessage('error', "⚠️ Validation warning: 'Physical deficiencies' should be marked 'Yes' or 'No'.");
+                }
+
+                const neighborhoodConformity = getFieldValue('Does the property generally conform to the neighborhood (functional utility, style, condition, use, construction, etc.)?');
+                if (!neighborhoodConformity) {
+                    addValidationMessage('error', "⚠️ Validation warning: 'Neighborhood conformity' question cannot be blank.");
+                } else if (neighborhoodConformity.toLowerCase() === 'no') {
+                    if (!getFieldValue('If No, describe')) {
+                        addValidationMessage('error', "⚠️ Validation warning: 'Neighborhood conformity' is 'No', but the description is missing.");
+                    }
+                } else if (neighborhoodConformity.toLowerCase() !== 'yes') {
+                    addValidationMessage('error', "⚠️ Validation warning: 'Neighborhood conformity' should be marked 'Yes' or 'No'.");
+                }
+
+
+                const requiredFields = [
+                    'Units', // GENERAL DESCRIPTION
+                    '# of Stories', // GENERAL DESCRIPTION
+                    'Type', // GENERAL DESCRIPTION
+                    'Existing/Proposed/Under Const.', // GENERAL DESCRIPTION
+                    'Design (Style)', // GENERAL DESCRIPTION
+                    'Year Built', // GENERAL DESCRIPTION
+                    'Effective Age (Yrs)', // GENERAL DESCRIPTION
+                    'Foundation Type', // Foundation section
+                    'Foundation Walls (Material/Condition)', // Foundation section
+                    'Basement Area sq.ft.', // Foundation section
+                    'Basement Finish', // Foundation section
+                    'Exterior Walls (Material/Condition)', //EXTERIOR DESCRIPTION
+                    'Roof Surface (Material/Condition)', //EXTERIOR DESCRIPTION
+                    'Gutters & Downspouts (Material/Condition)',
+                    'Window Type (Material/Condition)',
+                    'Floors (Material/Condition)',
+                    'Walls (Material/Condition)',
+                    'Trim/Finish (Material/Condition)',
+                    'Bath Floor (Material/Condition)',
+                    'Bath Wainscot (Material/Condition)',
+                    'Describe the condition of the property',
+                ];
+                const missingFields = [];
+                let physicalDeficienciesValue = null;
+                let conformsToNeighborhoodValue = null;
+                let foundationType = null;
+                let basementArea = null;
+                let basementFinish = null;
+
+                tableRows.forEach(row => {
+                    const fieldCell = row.querySelector('td:first-child');
+                    const valueCell = row.querySelector('td:last-child');
+                    if (fieldCell && valueCell) {
+                        const fieldName = fieldCell.textContent.trim();
+                        const value = valueCell.textContent.trim();
+
+                        // Check for conditional field triggers
+                        if (fieldName === 'Are there any physical deficiencies or adverse conditions that affect the livability, soundness, or structural integrity of the property?') {
+                            physicalDeficienciesValue = value.toLowerCase();
+                        }
+                        if (fieldName === 'Does the property generally conform to the neighborhood (functional utility, style, condition, use, construction, etc.)?') {
+                            conformsToNeighborhoodValue = value.toLowerCase();
+                        }
+
+                        // Capture values for basement validation
+                        if (fieldName === 'Foundation Type') {
+                            foundationType = value;
+                        }
+                        if (fieldName === 'Basement Area sq.ft.') {
+                            basementArea = value;
+                        }
+                        if (fieldName === 'Basement Finish') {
+                            basementFinish = value;
+                        }
+
+                        // Check if a required field is empty
+                        if (requiredFields.includes(fieldName) && (value === '--' || value === '')) {
+                            missingFields.push(fieldName);
+                        }
+                    }
+                });
+
+                // Conditionally check the "If Yes, describe" field
+                if (physicalDeficienciesValue === 'yes') {
+                    const describeField = Array.from(tableRows).find(row => row.querySelector('td:first-child').textContent.trim() === 'If Yes, describe');
+                    if (describeField) {
+                        const describeValue = describeField.querySelector('td:last-child').textContent.trim();
+                        if (!describeValue || describeValue === '--' || describeValue === 'null') {
+                            missingFields.push('If Yes, describe (for physical deficiencies)');
+                        }
+                    }
+                }
+
+                // Conditionally check the "If No, describe" field
+                if (conformsToNeighborhoodValue === 'no') {
+                    const describeField = Array.from(tableRows).find(row => row.querySelector('td:first-child').textContent.trim() === 'If No, describe');
+                    if (describeField) {
+                        const describeValue = describeField.querySelector('td:last-child').textContent.trim();
+                        if (!describeValue || describeValue === '--' || describeValue === 'null') {
+                            missingFields.push('If No, describe (for neighborhood conformity)');
+                        }
+                    }
+                }
+
+                if (missingFields.length > 0) {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message', 'validation-error');
+                    messageDiv.textContent = `⚠️ Validation warning: The following required fields are missing: ${missingFields.join(', ')}.`;
+                    validationContainer.appendChild(messageDiv);
+                }
+                {% endif %}
+
+                {% if section_key == 'sales_grid' %}
+                // Store the 'Indicated Value by Sales Comparison Approach' for cross-validation
+                // The structure is different for the sales grid, so we find the specific cell
+                const lastRow = document.querySelector('tbody tr:last-child');
+                if (lastRow) {
+                    const fieldCell = lastRow.querySelector('td:first-child');
+                    if (fieldCell && fieldCell.textContent.trim() === 'Indicated Value by Sales Comparison Approach') {
+                        const valueCell = lastRow.querySelector('td:last-child');
+                        // The value is inside a <strong> tag
+                        const salesGridValue = valueCell.querySelector('strong').textContent.trim();
+                        sessionStorage.setItem('salesGridIndicatedValue', salesGridValue);
+
+                        const messageDiv = document.createElement('div');
+                        messageDiv.classList.add('validation-message', 'validation-warning');
+                        messageDiv.textContent = `ℹ️ Info: Stored 'Indicated Value by Sales Comparison Approach' (${salesGridValue}) for validation in the Reconciliation section.`;
+                        validationContainer.appendChild(messageDiv);
+                    }
+                }
+
+                // Validation for Subject's View field in Sales Grid
+                tableRows.forEach(row => {
+                    const fieldCell = row.querySelector('td:first-child');
+                    if (fieldCell && fieldCell.textContent.trim() === 'View') {
+                        // In the sales grid, the second cell of the row is the Subject's value
+                        const subjectValueCell = row.querySelector('td:nth-child(2)');
+                        if (subjectValueCell && (subjectValueCell.textContent.trim() === '' || subjectValueCell.textContent.trim() === '--')) {
+                            const messageDiv = document.createElement('div');
+                            messageDiv.classList.add('validation-message', 'validation-warning');
+                            messageDiv.textContent = `⚠️ Warning: The 'View' field for the Subject is missing a description.`;
+                            validationContainer.appendChild(messageDiv);
+                        }
+                    }
+                });
+                {% else %}
+                tableRows.forEach(row => {
+                    const fieldCell = row.querySelector('td:first-child');
+                    if (fieldCell && fieldCell.textContent.trim() === 'Indicated Value by Sales Comparison Approach') {
+                        const valueCell = row.querySelector('td:last-child');
+                        const salesGridValue = valueCell.textContent.trim();
+                        sessionStorage.setItem('salesGridIndicatedValue', salesGridValue);
+
+                        const messageDiv = document.createElement('div');
+                        messageDiv.classList.add('validation-message', 'validation-warning');
+                        messageDiv.textContent = `ℹ️ Info: Stored 'Indicated Value by Sales Comparison Approach' (${salesGridValue}) for validation in the Reconciliation section.`;
+                        validationContainer.appendChild(messageDiv);
+                    }
+                });
+                {% endif %}
+
+                {% if section_key == 'reconciliation' %}
+                // Validation for value consistency across sections
+                const salesGridValue = sessionStorage.getItem('salesGridIndicatedValue');
+                let reconciliationSalesApproachValue = null;
+                let finalMarketValue = null;
+
+                const finalMarketValueField = "Based on a complete visual inspection of the interior and exterior areas of the subject property, defined scope of work, statement of assumptions and limiting conditions, and appraiser's certification, my (our) opinion of the market value, as defined, of the real property that is the subject of this report is $_______, as of ________, which is the date of inspection and the effective date of this appraisal.";
+
+                tableRows.forEach(row => {
+                    const fieldCell = row.querySelector('td:first-child');
+                    const valueCell = row.querySelector('td:last-child');
+                    const fieldName = fieldCell.textContent.trim();
+                    const value = valueCell.textContent.trim();
+
+                    if (fieldName === 'Indicated Value by: Sales Comparison Approach $') {
+                        reconciliationSalesApproachValue = value;
+                    } else if (fieldName === 'Opinion of Market Value $') {
+                        finalMarketValue = value;
+                    }
+                });
+
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('validation-message');
+
+                // Check for blank values first
+                if (!salesGridValue || !reconciliationSalesApproachValue || !finalMarketValue) {
+                    const missing = [];
+                    if (!salesGridValue) missing.push("'Indicated Value' from Sales Grid (view Sales Grid section to set)");
+                    if (!reconciliationSalesApproachValue) missing.push("'Indicated Value by Sales Comparison Approach'");
+                    if (!finalMarketValue) missing.push("'Opinion of Market Value $'");
+
+                    messageDiv.classList.add('validation-error');
+                    messageDiv.textContent = `⚠️ Validation warning: One or more values for comparison are blank. Missing: ${missing.join(', ')}.`;
+                } else {
+                    // Normalize values by removing '$' and commas
+                    const normSalesGrid = salesGridValue.replace(/[$,]/g, '');
+                    const normReconSales = reconciliationSalesApproachValue.replace(/[$,]/g, '');
+                    const normFinalMarket = finalMarketValue.replace(/[$,]/g, '');
+
+                    if (normSalesGrid === normReconSales && normReconSales === normFinalMarket) {
+                        messageDiv.classList.add('validation-success');
+                        messageDiv.textContent = `✅ Validation successful: All indicated values match (${salesGridValue}).`;
+                    } else {
+                        messageDiv.classList.add('validation-error');
+                        messageDiv.textContent = `⚠️ Validation warning: Indicated values do not match. Sales Grid: ${salesGridValue}, Reconciliation Sales Approach: ${reconciliationSalesApproachValue}, Final Market Value: ${finalMarketValue}`;
+                    }
+                }
+                validationContainer.appendChild(messageDiv);
+                {% endif %}
+
+                {% if section_key == 'cost_approach' %}
+                // Validation for required Cost Approach fields
+                const missingFields = [];
+                tableRows.forEach(row => {
+                    const fieldCell = row.querySelector('td:first-child');
+                    const valueCell = row.querySelector('td:last-child');
+                    const value = valueCell.textContent.trim();
+
+                    if (!value || value === '--' || value === 'null') {
+                        missingFields.push(fieldCell.textContent.trim());
+                    }
+                });
+
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('validation-message');
+                if (missingFields.length > 0) {
+                    messageDiv.classList.add('validation-error');
+                    messageDiv.textContent = `⚠️ Validation warning: All Cost Approach fields should be filled. The following fields are empty: ${missingFields.join(', ')}.`;
+                } else {
+                    messageDiv.classList.add('validation-success');
+                    messageDiv.textContent = '✅ Validation successful: All fields in the Cost Approach section are filled.';
+                }
+                validationContainer.appendChild(messageDiv);
+                {% endif %}
+
+                {% if section_key == 'certification' %}
+                // Validation for Lender/Client consistency
+                const subjectLenderClient = sessionStorage.getItem('subjectLenderClient');
+                if (subjectLenderClient) {
+                    let certificationLenderClientCompanyName = null;
+                    tableRows.forEach(row => {
+                        const fieldCell = row.querySelector('td:first-child');
+                        const valueCell = row.querySelector('td:last-child');
+                        if (fieldCell && valueCell && fieldCell.textContent.trim() === 'Lender/Client Company Name') {
+                            certificationLenderClientCompanyName = valueCell.textContent.trim();
+                        }
+                    });
+
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message');
+
+                    if (!certificationLenderClientCompanyName || certificationLenderClientCompanyName === '--' || certificationLenderClientCompanyName === 'null') {
+                        messageDiv.classList.add('validation-error');
+                        messageDiv.textContent = `⚠️ Validation warning: 'Lender/Client Company Name' is missing in the Certification section. The Subject section lists 'Lender/Client' as '${subjectLenderClient}'.`;
+                    } else if (subjectLenderClient.toLowerCase() === certificationLenderClientCompanyName.toLowerCase()) {
+                        messageDiv.classList.add('validation-success');
+                        messageDiv.textContent = `✅ Validation successful: 'Lender/Client' ('${subjectLenderClient}') from Subject is consistent with 'Lender/Client Company Name' ('${certificationLenderClientCompanyName}') from Certification.`;
+                    } else {
+                        messageDiv.classList.add('validation-error');
+                        messageDiv.textContent = `⚠️ Validation warning: 'Lender/Client' from Subject ('${subjectLenderClient}') mismatches 'Lender/Client Company Name' from Certification ('${certificationLenderClientCompanyName}').`;
+                    }
+                    validationContainer.appendChild(messageDiv);
+                }
+                {% endif %}
+
+                {% if section_key == 'market_conditions' %}
+                // Validation for Market Conditions Inventory Analysis
+                const inventoryFieldPrefix = "Inventory Analysis";
+                const missingInventoryFields = [];
+
+                // Select the first table which is the grid
+                const gridTable = document.querySelector('table');
+                if (gridTable) {
+                    const gridRows = gridTable.querySelectorAll('tbody tr');
+                    gridRows.forEach(row => {
+                        const fieldCell = row.querySelector('td:first-child');
+                        if (fieldCell && fieldCell.textContent.trim().startsWith(inventoryFieldPrefix)) {
+                            const valueCells = row.querySelectorAll('td.editable-value');
+                            valueCells.forEach(cell => {
+                                const value = cell.textContent.trim();
+                                if (!value || value === '--' || value === 'null') {
+                                    // Get a descriptive name for the missing field
+                                    const fieldName = cell.dataset.fieldName || fieldCell.textContent.trim();
+                                    missingInventoryFields.push(fieldName);
+                                }
+                            });
+                        }
+                    });
+                }
+
+                if (missingInventoryFields.length > 0) {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('validation-message', 'validation-error');
+                    messageDiv.textContent = `⚠️ Validation warning: The following required fields in the Inventory Analysis grid are empty: ${missingInventoryFields.join(', ')}.`;
+                    validationContainer.appendChild(messageDiv);
+                }
+
+                {% endif %}
+
+                {% if section_key == 'pud_info' %}
+                // Validation for PUD Info section based on 'isPUD' flag
+                if (sessionStorage.getItem('isPUD') === 'true') {
+                    let devInControl = null;
+                    const requiredFields = [
+                        "Legal Name of Project", "Total number of phases", "Total number of units",
+                        "Total number of units sold", "Total number of units rented",
+                        "Total number of units for sale", "Data source(s)"
+                    ];
+                    const missingFields = [];
+
+                    tableRows.forEach(row => {
+                        const fieldCell = row.querySelector('td:first-child');
+                        const valueCell = row.querySelector('td:last-child');
+                        if (fieldCell && valueCell) {
+                            const fieldName = fieldCell.textContent.trim();
+                            if (fieldName === "Is the developer/builder in control of the Homeowners' Association (HOA)?") {
+                                devInControl = valueCell.textContent.trim().toLowerCase();
+                            }
+                        }
+                    });
+
+                    if (devInControl === 'yes') {
+                        tableRows.forEach(row => {
+                            const fieldCell = row.querySelector('td:first-child');
+                            const valueCell = row.querySelector('td:last-child');
+                            const fieldName = fieldCell.textContent.trim();
+                            const value = valueCell.textContent.trim();
+
+                            if (requiredFields.includes(fieldName) && (!value || value === '--' || value === 'null')) {
+                                missingFields.push(fieldName);
+                            }
+                        });
+
+                        if (missingFields.length > 0) {
+                            const messageDiv = document.createElement('div');
+                            messageDiv.classList.add('validation-message', 'validation-error');
+                            messageDiv.textContent = `⚠️ Validation warning: Since the developer is in control of the HOA, the following fields are required but are empty: ${missingFields.join(', ')}.`;
+                            validationContainer.appendChild(messageDiv);
+                        }
+                    }
+                }
+                {% endif %}
+
+                {% if section_key == 'neighborhood' %}
+                // Validation for "one unit housing age(high,low,pred)"
+                tableRows.forEach(row => {
+                    const fieldCell = row.querySelector('td:first-child');
+                    if (fieldCell && fieldCell.textContent.trim() === 'one unit housing age(high,low,pred)') {
+                        const valueCell = row.querySelector('td:last-child');
+                        const valueText = valueCell.textContent.trim();
+
+                        // Clean the string: remove spaces, and split by comma or slash
+                        const parts = valueText.replace(/\s/g, '').split(/[\/,]/);
+
+                        if (parts.length === 3) {
+                            const high = parseInt(parts[0], 10);
+                            const low = parseInt(parts[1], 10);
+                            const pred = parseInt(parts[2], 10);
+
+                            if (!isNaN(high) && !isNaN(low) && !isNaN(pred)) {
+                                const messageDiv = document.createElement('div');
+                                messageDiv.classList.add('validation-message');
+
+                                if (pred >= Math.min(low, high) && pred <= Math.max(low, high)) {
+                                    messageDiv.classList.add('validation-success');
+                                    messageDiv.textContent = `✅ Validation successful: The predominant housing age (${pred} yrs) is within the low (${low} yrs) and high (${high} yrs) range.`;
+                                } else {
+                                    messageDiv.classList.add('validation-error');
+                                    messageDiv.textContent = `⚠️ Validation warning: The predominant housing age (${pred} yrs) is outside the low (${low} yrs) and high (${high} yrs) range.`;
+                                }
+                                validationContainer.appendChild(messageDiv);
+                            }
+                        }
+                    }
+                });
+                {% endif %}
+            }
+
+            // Add event listener for the validate button
+            document.getElementById('validate-btn').addEventListener('click', runValidations);
+
+            // Run validations on initial page load (after revision setup)
+            runValidations();
+
+            // --- Custom Analysis Page Specific JS ---
+            if (document.body.contains(document.getElementById('custom-analysis-form'))) {
+                document.querySelectorAll('.prompt-suggestion-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const promptText = this.getAttribute('data-prompt');
+                        const textarea = document.querySelector('#custom-analysis-form textarea[name="custom_prompt"]');
+                        textarea.value = promptText;
+                        textarea.focus();
+                    });
+                });
+
+                document.getElementById('custom-analysis-form').addEventListener('submit', function(event) {
+                    const promptText = this.querySelector('textarea[name="custom_prompt"]').value;
+                    if (promptText.trim() === '') {
+                        alert('Please enter a question or instruction for the analysis.');
+                        event.preventDefault(); // Stop the form from submitting
+                    } else {
+                        // The loading overlay is in the main content, so we need to show it
+                        const loadingOverlay = document.getElementById('loading-overlay');
+                        if(loadingOverlay) loadingOverlay.style.display = 'flex';
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

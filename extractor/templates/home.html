@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load math_filters %}
+
+{% block title %}Select Section to Extract{% endblock %}
+{% block extra_css %}
+<style>
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .home-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .success-card {
+        background-color: #e8f5e9; /* Lighter green */
+        border-left: 5px solid #2e7d32;
+        padding: 1.5rem;
+        margin-bottom: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        opacity: 0; /* Initially hidden for animation */
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+
+    .success-card h2 {
+        margin-top: 0;
+        color: #2e7d32;
+    }
+
+    .success-card p {
+        margin-bottom: 0.5rem;
+        color: #555;
+    }
+
+    .success-card .filename {
+        font-size: 0.9em;
+        color: #777;
+        margin-top: 1rem;
+    }
+
+    .section-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .section-button {
+        background-color: #ffffff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1.5rem;
+        text-align: center;
+        text-decoration: none;
+        color: #333;
+        font-weight: 600;
+        font-size: 1.1em;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        opacity: 0; /* Initially hidden for animation */
+        animation: fadeInUp 0.5s ease-out forwards;
+    }
+
+    .section-button:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 12px rgba(0,0,0,0.1);
+        color: #007bff;
+    }    
+
+    .suggested-prompts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .prompt-suggestion-btn {
+        background-color: #e9ecef;
+        border: 1px solid #dee2e6;
+        color: #495057;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9em;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .prompt-suggestion-btn:hover {
+        background-color: #d0e3ff;
+        color: #004085;
+        border-color: #b8daff;
+    }
+    .analysis-card {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        padding: 1.5rem;
+        margin-top: 2.5rem;
+        margin-bottom: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        animation: fadeInUp 0.6s 0.5s ease-out forwards;
+        opacity: 0;
+    }
+
+    .analysis-card h3 {
+        margin-top: 0;
+        color: #343a40;
+    }
+
+    .analysis-card textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        font-family: inherit;
+        font-size: 1rem;
+        margin-top: 1rem;
+        min-height: 80px;
+        resize: vertical;
+    }
+
+    .analysis-card textarea:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        outline: none;
+    }
+
+    .analysis-card .btn-submit {
+        background-color: #28a745;
+        color: white;
+        margin-top: 1rem;
+        border: none; /* Override .section-button border */
+        cursor: pointer;
+    }
+
+    .analysis-card .btn-submit:hover {
+        background-color: #218838;
+        color: white; /* Ensure text color remains white on hover */
+    }
+
+    .upload-another-link {
+        display: inline-block;
+        color: #5c677d;
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: color 0.2s, border-color 0.2s;
+    }
+
+    .upload-another-link:hover {
+        color: #333;
+        border-bottom-color: #333;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <div class="success-card">
+        <h2>PDF Uploaded Successfully!</h2>
+        <p>Select a section below to extract and display its data.</p>
+        <p><strong>Review Time:</strong> <span id="review-timer">00:00:00</span></p>
+        <p class="filename"><strong>File:</strong> {{ filename }}</p>
+    </div>
+
+    <div class="section-grid">
+        {% for section_name, display_name in sections.items %}
+            {% if section_name == 'custom_analysis' %}
+                <a href="{% url 'extract_section' filename=filename section_name=section_name %}" class="section-button" style="animation-delay: { forloop.counter0|multiply:0.1 }s;">
+                    {{ display_name }}
+                </a>
+            {% else %}
+                <a href="{% url 'extract_section' filename=filename section_name=section_name %}" class="section-button" style="animation-delay: { forloop.counter0|multiply:0.1 }s;">
+                    {{ display_name }}
+                </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <div style="text-align: center; margin-top: 3rem;">
+        <a href="{% url 'upload_pdf' %}" class="upload-another-link">Upload a different file</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Review Timer Functionality ---
+    const timerDisplay = document.getElementById('review-timer');
+    if (timerDisplay) {
+        let timerInterval;
+        // When the home page loads, it's a new session, so we set the start time.
+        const startTime = Date.now();
+        sessionStorage.setItem('reviewStartTime', startTime);
+
+        function updateTimer() {
+            const now = Date.now();
+            const elapsed = Math.floor((now - startTime) / 1000); // total seconds
+
+            const hours = Math.floor(elapsed / 3600);
+            const minutes = Math.floor((elapsed % 3600) / 60);
+            const secs = elapsed % 60;
+
+            const formattedTime =
+                String(hours).padStart(2, '0') + ':' +
+                String(minutes).padStart(2, '0') + ':' +
+                String(secs).padStart(2, '0');
+            timerDisplay.textContent = formattedTime;
+        }
+        updateTimer(); // Run once immediately
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+});
+
+
+document.querySelectorAll('.section-button').forEach(button => {
+    button.addEventListener('click', function() {
+        document.getElementById('loader-overlay').style.display = 'flex';
+    });
+});
+
+</script>
+{% endblock %}
